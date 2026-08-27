@@ -1,0 +1,232 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="关于我 · TSY">
+	<header class="page-header">
+		<p class="eyebrow">ABOUT</p>
+
+		<h1>
+			你好，我是 TSY。
+		</h1>
+
+		<p class="intro">
+			一个正在学习数学、探索技术，
+			也试着认真生活的人。
+		</p>
+	</header>
+
+	<main class="about-container">
+		<section class="about-section">
+			<h2>关于这个博客</h2>
+
+			<div class="text">
+				<p>
+					我一直觉得，很多想法如果只停留在脑子里，
+					过一段时间就会慢慢消失。
+				</p>
+
+				<p>
+					所以我想建一个属于自己的地方，
+					把学习数学时遇到的问题、
+					折腾技术时做过的东西，
+					以及生活中偶尔出现的一些想法记录下来。
+				</p>
+
+				<p>
+					这里不追求什么“专业博客”的感觉。
+					它更像是我的一个数字房间。
+				</p>
+			</div>
+		</section>
+
+		<section class="about-section">
+			<h2>我在做什么</h2>
+
+			<div class="items">
+				<div class="item">
+					<span class="label">01</span>
+
+					<div>
+						<h3>Mathematics</h3>
+						<p>
+							学习数学，思考数学。
+							尤其喜欢那些需要真正理解和证明的问题。
+						</p>
+					</div>
+				</div>
+
+				<div class="item">
+					<span class="label">02</span>
+
+					<div>
+						<h3>Technology</h3>
+						<p>
+							探索 AI、Web 以及各种有趣的技术。
+							这个博客本身也是一次实验。
+						</p>
+					</div>
+				</div>
+
+				<div class="item">
+					<span class="label">03</span>
+
+					<div>
+						<h3>Life</h3>
+						<p>
+							记录一些和数学、代码无关的东西。
+							毕竟生活不应该只有这些。
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="about-section">
+			<h2>现在</h2>
+
+			<div class="now">
+				<p>
+					目前正在认真学习数学，
+					也在一点一点搭建这个博客。
+				</p>
+
+				<p>
+					如果以后这里积累了足够多的文字，
+					也许回头看会是一件挺有意思的事情。
+				</p>
+			</div>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.page-header {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 100px 24px 90px;
+		border-bottom: 1px solid #e5e5e5;
+	}
+
+	.eyebrow {
+		margin: 0 0 20px;
+		font-size: 12px;
+		letter-spacing: 0.18em;
+		color: #888;
+	}
+
+	.page-header h1 {
+		margin: 0;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: clamp(44px, 7vw, 70px);
+		font-weight: 400;
+		line-height: 1.15;
+		letter-spacing: -0.04em;
+	}
+
+	.intro {
+		max-width: 560px;
+		margin: 28px 0 0;
+		color: #777;
+		font-size: 17px;
+		line-height: 1.9;
+	}
+
+	.about-container {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 0 24px 120px;
+	}
+
+	.about-section {
+		display: grid;
+		grid-template-columns: 180px 1fr;
+		gap: 50px;
+		padding: 70px 0;
+		border-bottom: 1px solid #e5e5e5;
+	}
+
+	.about-section h2 {
+		margin: 0;
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.text {
+		max-width: 600px;
+	}
+
+	.text p,
+	.now p {
+		margin: 0 0 22px;
+		color: #666;
+		font-size: 16px;
+		line-height: 2;
+	}
+
+	.text p:last-child,
+	.now p:last-child {
+		margin-bottom: 0;
+	}
+
+	.items {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.item {
+		display: grid;
+		grid-template-columns: 50px 1fr;
+		gap: 20px;
+		padding-bottom: 36px;
+	}
+
+	.item:last-child {
+		padding-bottom: 0;
+	}
+
+	.label {
+		font-family: monospace;
+		font-size: 12px;
+		color: #aaa;
+	}
+
+	.item h3 {
+		margin: 0 0 8px;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 22px;
+		font-weight: 500;
+	}
+
+	.item p {
+		max-width: 500px;
+		margin: 0;
+		color: #777;
+		line-height: 1.8;
+	}
+
+	.now {
+		max-width: 600px;
+	}
+
+	@media (max-width: 600px) {
+		.page-header {
+			padding: 70px 20px 60px;
+		}
+
+		.about-container {
+			padding: 0 20px 80px;
+		}
+
+		.about-section {
+			grid-template-columns: 1fr;
+			gap: 28px;
+			padding: 50px 0;
+		}
+
+		.item {
+			grid-template-columns: 40px 1fr;
+			gap: 12px;
+		}
+	}
+</style>

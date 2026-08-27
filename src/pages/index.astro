@@ -1,0 +1,157 @@
+
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const posts = [
+	{
+		title: "你好，世界",
+		description: "这是我的个人博客，也是这里的第一篇文章。",
+		date: "2026-08-27",
+	},
+	{
+		title: "关于数学、AI 与一些思考",
+		description: "记录数学学习、技术折腾，以及那些值得留下来的想法。",
+		date: "2026-08-27",
+	},
+];
+---
+
+<BaseLayout>
+	<section class="hero">
+		<p class="eyebrow">MATHEMATICS · THOUGHTS · LIFE</p>
+
+		<h1>
+			记录思考，<br />
+			也记录生活。
+		</h1>
+
+		<p class="intro">
+			这里是我的个人博客。
+			记录数学学习、技术折腾，以及那些值得留下来的想法。
+		</p>
+	</section>
+
+	<section class="posts">
+		<div class="section-title">
+			<h2>最近文章</h2>
+			<a href="/posts">查看全部 →</a>
+		</div>
+
+		<div class="post-list">
+			{posts.map((post) => (
+				<article class="post">
+					<div class="post-date">{post.date}</div>
+
+					<div>
+						<h3>{post.title}</h3>
+						<p>{post.description}</p>
+					</div>
+				</article>
+			))}
+		</div>
+	</section>
+</BaseLayout>
+
+<style>
+	.hero {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 100px 24px 110px;
+	}
+
+	.eyebrow {
+		margin: 0 0 24px;
+		font-size: 12px;
+		letter-spacing: 0.18em;
+		color: #888;
+	}
+
+	h1 {
+		margin: 0;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: clamp(48px, 8vw, 78px);
+		font-weight: 400;
+		line-height: 1.12;
+		letter-spacing: -0.04em;
+	}
+
+	.intro {
+		max-width: 560px;
+		margin-top: 32px;
+		color: #666;
+		font-size: 17px;
+		line-height: 1.9;
+	}
+
+	.posts {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 0 24px 120px;
+	}
+
+	.section-title {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		border-bottom: 1px solid #ddd;
+		padding-bottom: 16px;
+	}
+
+	.section-title h2 {
+		margin: 0;
+		font-size: 18px;
+		font-weight: 600;
+	}
+
+	.section-title a {
+		font-size: 13px;
+		color: #777;
+		text-decoration: none;
+	}
+
+	.section-title a:hover {
+		color: #111;
+	}
+
+	.post {
+		display: grid;
+		grid-template-columns: 130px 1fr;
+		gap: 30px;
+		padding: 28px 0;
+		border-bottom: 1px solid #e5e5e5;
+	}
+
+	.post-date {
+		font-family: monospace;
+		font-size: 13px;
+		color: #999;
+	}
+
+	.post h3 {
+		margin: 0 0 10px;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 24px;
+		font-weight: 500;
+	}
+
+	.post p {
+		margin: 0;
+		color: #777;
+		line-height: 1.7;
+	}
+
+	@media (max-width: 600px) {
+		.hero {
+			padding: 70px 20px 80px;
+		}
+
+		.posts {
+			padding: 0 20px 80px;
+		}
+
+		.post {
+			grid-template-columns: 1fr;
+			gap: 8px;
+		}
+	}
+</style>
