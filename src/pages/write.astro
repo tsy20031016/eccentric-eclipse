@@ -1275,7 +1275,8 @@ $$
 
 		padding: 14px 16px;
 
-		color: #111;
+		color: #111 !important;
+-webkit-text-fill-color: #111 !important;
 
 		font: inherit;
 
@@ -1352,22 +1353,31 @@ $$
 	}
 
 	textarea {
-		min-height: 440px;
+	min-height: 440px;
+	resize: vertical;
+	line-height: 1.8;
 
-		resize: vertical;
+	/* 强制正文使用深黑色 */
+	color: #111111 !important;
+	-webkit-text-fill-color: #111111 !important;
 
-		line-height: 1.8;
+	/* 防止 Safari 把文字变淡 */
+	opacity: 1 !important;
 
-		color: #111;
+	/* 光标也使用黑色 */
+	caret-color: #111111;
 
-		background: #fff;
+	/* 防止 iOS 自动改变输入框外观 */
+	-webkit-appearance: none;
+	appearance: none;
+}
 
-		-webkit-text-fill-color: #111;
-
-		opacity: 1;
-
-		caret-color: #111;
-	}
+/* 正文占位文字保持浅灰 */
+textarea::placeholder {
+	color: #999999 !important;
+	-webkit-text-fill-color: #999999 !important;
+	opacity: 1 !important;
+}
 
 	.preview {
 		min-height: 440px;
@@ -1620,25 +1630,4 @@ $$
 			font-size: 16px;
 		}
 	}
-
-/* 正文编辑区文字颜色 */
-#editor,
-#content,
-.editor-content,
-[contenteditable="true"] {
-	color: #111 !important;
-	-webkit-text-fill-color: #111 !important;
-}
-
-/* 编辑区占位提示保持灰色 */
-[contenteditable="true"]:empty::before {
-	color: #999 !important;
-}
-
-/* 编辑区选中文字 */
-[contenteditable="true"]::selection {
-	background: #dcdcdc;
-	color: #111;
-}
-
 </style>
