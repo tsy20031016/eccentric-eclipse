@@ -13,8 +13,12 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 	<body>
 		<main>
 			<header>
-				<a href="/">TSY</a>
-				<span>WRITE</span>
+				<a href="/eccentric-eclipse/">TSY</a>
+
+				<div class="header-right">
+					<span>WRITE</span>
+					<span id="saveStatus">● 草稿未保存</span>
+				</div>
 			</header>
 
 			<section class="editor">
@@ -29,6 +33,7 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 							id="title"
 							type="text"
 							placeholder="文章标题"
+							autocomplete="off"
 						/>
 					</label>
 
@@ -38,25 +43,77 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 							id="description"
 							type="text"
 							placeholder="简单描述一下这篇文章"
+							autocomplete="off"
 						/>
 					</label>
 
-					<label>
-						<span>分类</span>
-						<select id="category">
-							<option value="随笔">随笔</option>
-							<option value="数学">数学</option>
-							<option value="AI">AI</option>
-							<option value="技术">技术</option>
-							<option value="生活">生活</option>
-						</select>
-					</label>
+					<div class="two-columns">
+						<label>
+							<span>分类</span>
+
+							<select id="category">
+								<option value="随笔">随笔</option>
+								<option value="数学">数学</option>
+								<option value="AI">AI</option>
+								<option value="技术">技术</option>
+								<option value="生活">生活</option>
+							</select>
+						</label>
+
+						<label>
+							<span>发布日期</span>
+
+							<input
+								id="date"
+								type="date"
+							/>
+						</label>
+					</div>
 
 					<label>
+						<span>标签</span>
+
+						<input
+							id="tags"
+							type="text"
+							placeholder="例如：数学, 学习, 思考"
+							autocomplete="off"
+						/>
+
+						<small>
+							多个标签用逗号分隔
+						</small>
+					</label>
+
+					<div class="content-header">
 						<span>正文</span>
+
+						<div class="editor-tabs">
+							<button
+								type="button"
+								class="tab active"
+								id="editTab"
+							>
+								编辑
+							</button>
+
+							<button
+								type="button"
+								class="tab"
+								id="previewTab"
+							>
+								预览
+							</button>
+						</div>
+					</div>
+
+					<div
+						class="editor-wrapper"
+						id="dropZone"
+					>
 						<textarea
 							id="content"
-							placeholder="在这里写下你的想法……
+							placeholder={`在这里写下你的想法……
 
 支持 Markdown，例如：
 
@@ -64,84 +121,771 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 
 这是正文。
 
+**粗体**
+
+*斜体*
+
+- 列表
+
 $$
 f(x)=x^2
-$$"
+$$
+
+你也可以直接把图片拖进这里。`}
 						></textarea>
-					</label>
 
-					<button id="publish">发布文章</button>
+						<div
+							id="preview"
+							class="preview"
+							hidden
+						></div>
 
-					<p id="message"></p>
+						<div
+							id="dropOverlay"
+							class="drop-overlay"
+							hidden
+						>
+							<div>
+								<strong>松开鼠标上传图片</strong>
+								<span>图片会自动插入正文</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="tools">
+						<label
+							for="imageInput"
+							class="upload-button"
+						>
+							📷 上传图片
+						</label>
+
+						<input
+							id="imageInput"
+							type="file"
+							accept="image/*"
+							hidden
+						/>
+
+						<button
+							type="button"
+							id="clearDraft"
+							class="secondary-button"
+						>
+							清空草稿
+						</button>
+					</div>
+
+					<div
+						id="uploadStatus"
+						class="upload-status"
+					></div>
+
+					<div class="bottom-actions">
+						<button
+							type="button"
+							id="publish"
+							class="publish-button"
+						>
+							发布文章
+						</button>
+
+						<p id="message"></p>
+					</div>
 				</div>
 			</section>
 		</main>
 
 		<script define:vars={{ apiUrl }}>
-			const title = document.querySelector("#title");
-			const description = document.querySelector("#description");
-			const category = document.querySelector("#category");
-			const content = document.querySelector("#content");
-			const button = document.querySelector("#publish");
-			const message = document.querySelector("#message");
+			const title =
+				document.querySelector("#title");
 
-			button.addEventListener("click", async () => {
-				if (!title.value.trim()) {
-					message.textContent = "请先填写标题。";
+			const description =
+				document.querySelector("#description");
+
+			const category =
+				document.querySelector("#category");
+
+			const date =
+				document.querySelector("#date");
+
+			const tags =
+				document.querySelector("#tags");
+
+			const content =
+				document.querySelector("#content");
+
+			const button =
+				document.querySelector("#publish");
+
+			const message =
+				document.querySelector("#message");
+
+			const saveStatus =
+				document.querySelector("#saveStatus");
+
+			const preview =
+				document.querySelector("#preview");
+
+			const editTab =
+				document.querySelector("#editTab");
+
+			const previewTab =
+				document.querySelector("#previewTab");
+
+			const imageInput =
+				document.querySelector("#imageInput");
+
+			const dropZone =
+				document.querySelector("#dropZone");
+
+			const dropOverlay =
+				document.querySelector("#dropOverlay");
+
+			const uploadStatus =
+				document.querySelector("#uploadStatus");
+
+			const clearDraft =
+				document.querySelector("#clearDraft");
+
+
+			// ================================
+			// 日期默认值
+			// ================================
+
+			if (!date.value) {
+				date.value =
+					new Date()
+						.toISOString()
+						.slice(0, 10);
+			}
+
+
+			// ================================
+			// 草稿系统
+			// ================================
+
+			const DRAFT_KEY =
+				"tsy-blog-draft-v3";
+
+			let saveTimer = null;
+
+
+			function getDraft() {
+				return {
+					title: title.value,
+					description: description.value,
+					category: category.value,
+					date: date.value,
+					tags: tags.value,
+					content: content.value,
+				};
+			}
+
+
+			function saveDraft() {
+				const draft = getDraft();
+
+				localStorage.setItem(
+					DRAFT_KEY,
+					JSON.stringify(draft)
+				);
+
+				saveStatus.textContent =
+					"● 草稿已保存";
+			}
+
+
+			function loadDraft() {
+				const raw =
+					localStorage.getItem(
+						DRAFT_KEY
+					);
+
+				if (!raw) {
 					return;
 				}
-
-				if (!content.value.trim()) {
-					message.textContent = "正文还没有写呢。";
-					return;
-				}
-
-				button.disabled = true;
-				button.textContent = "正在发布……";
-				message.textContent = "";
 
 				try {
-					const response = await fetch(apiUrl, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							title: title.value,
-							description: description.value,
-							category: category.value,
-							content: content.value,
-						}),
-					});
+					const draft =
+						JSON.parse(raw);
 
-					const result = await response.json();
+					title.value =
+						draft.title || "";
 
-					if (!response.ok || !result.success) {
+					description.value =
+						draft.description || "";
+
+					category.value =
+						draft.category || "随笔";
+
+					date.value =
+						draft.date ||
+						new Date()
+							.toISOString()
+							.slice(0, 10);
+
+					tags.value =
+						draft.tags || "";
+
+					content.value =
+						draft.content || "";
+
+					saveStatus.textContent =
+						"● 已恢复草稿";
+
+				} catch (error) {
+					console.error(
+						"读取草稿失败",
+						error
+					);
+				}
+			}
+
+
+			function scheduleSave() {
+				saveStatus.textContent =
+					"● 正在保存…";
+
+				clearTimeout(saveTimer);
+
+				saveTimer =
+					setTimeout(
+						saveDraft,
+						500
+					);
+			}
+
+
+			[
+				title,
+				description,
+				category,
+				date,
+				tags,
+				content,
+			].forEach((element) => {
+				element.addEventListener(
+					"input",
+					scheduleSave
+				);
+
+				element.addEventListener(
+					"change",
+					scheduleSave
+				);
+			});
+
+
+			loadDraft();
+
+
+			// ================================
+			// Markdown 简单预览
+			// ================================
+
+			function escapeHtml(text) {
+				return text
+					.replaceAll("&", "&amp;")
+					.replaceAll("<", "&lt;")
+					.replaceAll(">", "&gt;");
+			}
+
+
+			function markdownToHtml(markdown) {
+				let html =
+					escapeHtml(markdown);
+
+				html =
+					html.replace(
+						/^### (.*)$/gm,
+						"<h3>$1</h3>"
+					);
+
+				html =
+					html.replace(
+						/^## (.*)$/gm,
+						"<h2>$1</h2>"
+					);
+
+				html =
+					html.replace(
+						/^# (.*)$/gm,
+						"<h1>$1</h1>"
+					);
+
+				html =
+					html.replace(
+					(/\*\*(.*?)\*\*/g),
+						"<strong>$1</strong>"
+					);
+
+				html =
+					html.replace(
+					(/\*(.*?)\*/g),
+						"<em>$1</em>"
+					);
+
+				html =
+					html.replace(
+						/!\[(.*?)\]\((.*?)\)/g,
+						'<img src="$2" alt="$1" />'
+					);
+
+				html =
+					html.replace(
+						/\[(.*?)\]\((.*?)\)/g,
+						'<a href="$2">$1</a>'
+					);
+
+				html =
+					html.replace(
+						/^> (.*)$/gm,
+						"<blockquote>$1</blockquote>"
+					);
+
+				html =
+					html.replace(
+						/^- (.*)$/gm,
+						"<li>$1</li>"
+					);
+
+				html =
+					html.replace(
+						/(<li>.*<\/li>)/gs,
+						"<ul>$1</ul>"
+					);
+
+				html =
+					html.replace(
+						/\n\n/g,
+						"</p><p>"
+					);
+
+				html =
+					"<p>" + html + "</p>";
+
+				html =
+					html.replace(
+						/<p>(<h[1-3]>)/g,
+						"$1"
+					);
+
+				html =
+					html.replace(
+						/(<\/h[1-3]>)<\/p>/g,
+						"$1"
+					);
+
+				return html;
+			}
+
+
+			function showPreview() {
+				preview.innerHTML =
+					markdownToHtml(
+						content.value
+					);
+
+				content.hidden = true;
+				preview.hidden = false;
+
+				editTab.classList.remove(
+					"active"
+				);
+
+				previewTab.classList.add(
+					"active"
+				);
+			}
+
+
+			function showEditor() {
+				content.hidden = false;
+				preview.hidden = true;
+
+				previewTab.classList.remove(
+					"active"
+				);
+
+				editTab.classList.add(
+					"active"
+				);
+			}
+
+
+			editTab.addEventListener(
+				"click",
+				showEditor
+			);
+
+			previewTab.addEventListener(
+				"click",
+				showPreview
+			);
+
+
+			// ================================
+			// 图片上传
+			// ================================
+
+			async function uploadImage(file) {
+				if (!file) {
+					return;
+				}
+
+				if (
+					!file.type.startsWith("image/")
+				) {
+					uploadStatus.textContent =
+						"请选择图片文件。";
+
+					return;
+				}
+
+				if (
+					file.size >
+					10 * 1024 * 1024
+				) {
+					uploadStatus.textContent =
+						"图片不能超过 10MB。";
+
+					return;
+				}
+
+				uploadStatus.textContent =
+					`正在上传 ${file.name}…`;
+
+				try {
+					const response =
+						await fetch(
+							apiUrl + "upload",
+							{
+								method: "POST",
+
+								headers: {
+									"Content-Type":
+										file.type,
+								},
+
+								body: file,
+							}
+						);
+
+					const result =
+						await response.json();
+
+					if (
+						!response.ok ||
+						!result.success
+					) {
 						throw new Error(
-							result.message || "发布失败"
+							result.message ||
+							"图片上传失败"
 						);
 					}
 
-					message.textContent =
-						"✓ 发布成功！GitHub 正在自动部署。";
+					const imageMarkdown =
+						`\n\n![${file.name}](${result.url})\n\n`;
 
-					title.value = "";
-					description.value = "";
-					content.value = "";
+					insertAtCursor(
+						imageMarkdown
+					);
+
+					uploadStatus.textContent =
+						"✓ 图片上传成功，已插入正文。";
+
+					saveDraft();
 
 				} catch (error) {
 					console.error(error);
 
-					message.textContent =
-						"发布失败：" + error.message;
-				} finally {
-					button.disabled = false;
-					button.textContent = "发布文章";
+					uploadStatus.textContent =
+						"图片上传失败：" +
+						error.message;
 				}
-			});
+			}
+
+
+			function insertAtCursor(text) {
+				const start =
+					content.selectionStart;
+
+				const end =
+					content.selectionEnd;
+
+				const before =
+					content.value.slice(
+						0,
+						start
+					);
+
+				const after =
+					content.value.slice(end);
+
+				content.value =
+					before +
+					text +
+					after;
+
+				const newPosition =
+					start + text.length;
+
+				content.selectionStart =
+					newPosition;
+
+				content.selectionEnd =
+					newPosition;
+
+				content.focus();
+
+				scheduleSave();
+			}
+
+
+			imageInput.addEventListener(
+				"change",
+				async () => {
+					const file =
+						imageInput.files?.[0];
+
+					await uploadImage(file);
+
+					imageInput.value = "";
+				}
+			);
+
+
+			// ================================
+			// 拖入图片
+			// ================================
+
+			dropZone.addEventListener(
+				"dragover",
+				(event) => {
+					event.preventDefault();
+
+					dropOverlay.hidden =
+						false;
+				}
+			);
+
+
+			dropZone.addEventListener(
+				"dragleave",
+				(event) => {
+					if (
+						!dropZone.contains(
+							event.relatedTarget
+						)
+					) {
+						dropOverlay.hidden =
+							true;
+					}
+				}
+			);
+
+
+			dropZone.addEventListener(
+				"drop",
+				async (event) => {
+					event.preventDefault();
+
+					dropOverlay.hidden =
+						true;
+
+					const files =
+						Array.from(
+							event.dataTransfer.files
+						);
+
+					const images =
+						files.filter((file) =>
+							file.type.startsWith(
+								"image/"
+							)
+						);
+
+					for (const file of images) {
+						await uploadImage(file);
+					}
+				}
+			);
+
+
+			// ================================
+			// 清空草稿
+			// ================================
+
+			clearDraft.addEventListener(
+				"click",
+				() => {
+					const confirmed =
+						confirm(
+							"确定要清空当前草稿吗？"
+						);
+
+					if (!confirmed) {
+						return;
+					}
+
+					title.value = "";
+					description.value = "";
+					category.value = "随笔";
+
+					date.value =
+						new Date()
+							.toISOString()
+							.slice(0, 10);
+
+					tags.value = "";
+					content.value = "";
+
+					localStorage.removeItem(
+						DRAFT_KEY
+					);
+
+					saveStatus.textContent =
+						"● 草稿已清空";
+
+					message.textContent = "";
+					uploadStatus.textContent = "";
+
+					showEditor();
+				}
+			);
+
+
+			// ================================
+			// 发布文章
+			// ================================
+
+			button.addEventListener(
+				"click",
+				async () => {
+					if (
+						!title.value.trim()
+					) {
+						message.textContent =
+							"请先填写标题。";
+
+						return;
+					}
+
+					if (
+						!content.value.trim()
+					) {
+						message.textContent =
+							"正文还没有写呢。";
+
+						return;
+					}
+
+					button.disabled = true;
+
+					button.textContent =
+						"正在发布……";
+
+					message.textContent = "";
+
+					try {
+						const tagList =
+							tags.value
+								.split(",")
+								.map(
+									(tag) =>
+										tag.trim()
+								)
+								.filter(Boolean);
+
+						const response =
+							await fetch(
+								apiUrl,
+								{
+									method: "POST",
+
+									headers: {
+										"Content-Type":
+											"application/json",
+									},
+
+									body:
+										JSON.stringify({
+											title:
+												title.value,
+
+											description:
+												description.value,
+
+											category:
+												category.value,
+
+											date:
+												date.value,
+
+											tags:
+												tagList,
+
+											content:
+												content.value,
+										}),
+								}
+							);
+
+						const result =
+							await response.json();
+
+						if (
+							!response.ok ||
+							!result.success
+						) {
+							throw new Error(
+								result.message ||
+								"发布失败"
+							);
+						}
+
+						message.textContent =
+							"✓ 发布成功！GitHub 正在自动部署。";
+
+						localStorage.removeItem(
+							DRAFT_KEY
+						);
+
+						saveStatus.textContent =
+							"● 草稿已清除";
+
+						title.value = "";
+						description.value = "";
+						tags.value = "";
+						content.value = "";
+
+						date.value =
+							new Date()
+								.toISOString()
+								.slice(0, 10);
+
+						showEditor();
+
+					} catch (error) {
+						console.error(error);
+
+						message.textContent =
+							"发布失败：" +
+							error.message;
+
+					} finally {
+						button.disabled = false;
+
+						button.textContent =
+							"发布文章";
+					}
+				}
+			);
 		</script>
 	</body>
 </html>
+
 
 <style>
 	* {
@@ -152,6 +896,7 @@ $$"
 		margin: 0;
 		background: #fafafa;
 		color: #202020;
+
 		font-family:
 			-apple-system,
 			BlinkMacSystemFont,
@@ -163,7 +908,7 @@ $$"
 	}
 
 	main {
-		max-width: 760px;
+		max-width: 820px;
 		margin: 0 auto;
 		padding: 28px 24px 100px;
 	}
@@ -172,38 +917,61 @@ $$"
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding-bottom: 80px;
+
+		padding-bottom: 70px;
 	}
 
 	header a {
 		color: #202020;
+
 		font-size: 20px;
 		font-weight: 700;
+
 		letter-spacing: 0.08em;
 		text-decoration: none;
 	}
 
+	.header-right {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+	}
+
 	header span {
 		color: #999;
-		font-size: 12px;
-		letter-spacing: 0.18em;
+		font-size: 11px;
+		letter-spacing: 0.14em;
+	}
+
+	#saveStatus {
+		color: #888;
+		letter-spacing: 0;
 	}
 
 	.editor {
-		max-width: 680px;
+		max-width: 760px;
 	}
 
 	.eyebrow {
 		margin: 0 0 20px;
+
 		color: #999;
+
 		font-size: 11px;
 		letter-spacing: 0.16em;
 	}
 
 	h1 {
 		margin: 0 0 50px;
-		font-family: Georgia, "Times New Roman", serif;
-		font-size: clamp(44px, 9vw, 72px);
+
+		font-family:
+			Georgia,
+			"Times New Roman",
+			serif;
+
+		font-size:
+			clamp(44px, 9vw, 72px);
+
 		font-weight: 400;
 		letter-spacing: -0.04em;
 	}
@@ -211,7 +979,7 @@ $$"
 	.form {
 		display: flex;
 		flex-direction: column;
-		gap: 28px;
+		gap: 26px;
 	}
 
 	label {
@@ -220,73 +988,336 @@ $$"
 		gap: 10px;
 	}
 
-	label span {
+	label > span,
+	.content-header > span {
 		color: #777;
 		font-size: 13px;
+	}
+
+	small {
+		color: #aaa;
+		font-size: 12px;
 	}
 
 	input,
 	select,
 	textarea {
 		width: 100%;
+
 		border: 1px solid #ddd;
-		border-radius: 4px;
+		border-radius: 5px;
+
 		background: white;
+
 		padding: 14px 16px;
+
 		color: #222;
+
 		font: inherit;
+
 		outline: none;
+
+		transition:
+			border-color 0.2s,
+			box-shadow 0.2s;
 	}
 
 	input:focus,
 	select:focus,
 	textarea:focus {
 		border-color: #999;
+
+		box-shadow:
+			0 0 0 3px
+			rgba(0, 0, 0, 0.04);
 	}
 
-	textarea {
-		min-height: 360px;
-		resize: vertical;
-		line-height: 1.8;
+	.two-columns {
+		display: grid;
+		grid-template-columns:
+			1fr 1fr;
+
+		gap: 18px;
 	}
 
-	button {
-		border: 0;
+	.content-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+
+		margin-bottom: -16px;
+	}
+
+	.editor-tabs {
+		display: flex;
+		gap: 5px;
+	}
+
+	.tab {
+		border: 1px solid transparent;
 		border-radius: 4px;
-		background: #202020;
-		color: white;
-		padding: 15px 20px;
-		font: inherit;
+
+		background: transparent;
+		color: #999;
+
+		padding: 6px 10px;
+
+		font-size: 12px;
 		cursor: pointer;
 	}
 
-	button:hover {
+	.tab:hover {
+		background: #f0f0f0;
+	}
+
+	.tab.active {
+		background: #202020;
+		color: white;
+	}
+
+	.editor-wrapper {
+		position: relative;
+	}
+
+	textarea {
+		min-height: 440px;
+
+		resize: vertical;
+
+		line-height: 1.8;
+	}
+
+	.preview {
+		min-height: 440px;
+
+		overflow-wrap: anywhere;
+
+		border: 1px solid #ddd;
+		border-radius: 5px;
+
+		background: white;
+
+		padding: 20px 22px;
+
+		line-height: 1.9;
+	}
+
+	.preview h1,
+	.preview h2,
+	.preview h3 {
+		margin-top: 1.5em;
+		margin-bottom: 0.6em;
+
+		font-family:
+			Georgia,
+			"Times New Roman",
+			serif;
+
+		letter-spacing: -0.02em;
+	}
+
+	.preview h1 {
+		font-size: 30px;
+	}
+
+	.preview h2 {
+		font-size: 25px;
+	}
+
+	.preview h3 {
+		font-size: 21px;
+	}
+
+	.preview img {
+		display: block;
+
+		max-width: 100%;
+
+		height: auto;
+
+		margin: 20px 0;
+
+		border-radius: 5px;
+	}
+
+	.preview blockquote {
+		margin: 20px 0;
+
+		border-left: 3px solid #ddd;
+
+		padding-left: 18px;
+
+		color: #777;
+	}
+
+	.preview a {
+		color: inherit;
+	}
+
+	.drop-overlay {
+		position: absolute;
+
+		inset: 0;
+
+		z-index: 10;
+
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		border: 2px dashed #999;
+		border-radius: 5px;
+
+		background: rgba(
+			255,
+			255,
+			255,
+			0.94
+		);
+
+		pointer-events: none;
+	}
+
+	.drop-overlay div {
+		display: flex;
+		flex-direction: column;
+
+		align-items: center;
+
+		gap: 8px;
+	}
+
+	.drop-overlay strong {
+		font-size: 17px;
+	}
+
+	.drop-overlay span {
+		color: #888;
+		font-size: 13px;
+	}
+
+	.tools {
+		display: flex;
+		align-items: center;
+
+		gap: 10px;
+	}
+
+	.upload-button,
+	.secondary-button {
+		display: inline-flex;
+
+		align-items: center;
+		justify-content: center;
+
+		border: 1px solid #ddd;
+		border-radius: 4px;
+
+		background: white;
+		color: #444;
+
+		padding: 11px 15px;
+
+		font-size: 13px;
+
+		cursor: pointer;
+
+		transition:
+			background 0.2s,
+			border-color 0.2s;
+	}
+
+	.upload-button:hover,
+	.secondary-button:hover {
+		background: #f5f5f5;
+		border-color: #bbb;
+	}
+
+	.upload-status {
+		min-height: 20px;
+
+		color: #888;
+
+		font-size: 13px;
+	}
+
+	.bottom-actions {
+		display: flex;
+		flex-direction: column;
+
+		gap: 12px;
+	}
+
+	.publish-button {
+		width: 100%;
+
+		border: 0;
+		border-radius: 5px;
+
+		background: #202020;
+		color: white;
+
+		padding: 16px 20px;
+
+		font: inherit;
+
+		cursor: pointer;
+
+		transition: opacity 0.2s;
+	}
+
+	.publish-button:hover {
 		opacity: 0.85;
 	}
 
-	button:disabled {
+	.publish-button:disabled {
 		cursor: wait;
 		opacity: 0.5;
 	}
 
 	#message {
 		margin: 0;
+
 		min-height: 24px;
+
 		color: #777;
+
 		font-size: 14px;
 	}
 
 	@media (max-width: 600px) {
 		main {
-			padding: 22px 20px 70px;
+			padding:
+				22px 20px 70px;
 		}
 
 		header {
-			padding-bottom: 60px;
+			padding-bottom: 55px;
 		}
 
-		textarea {
-			min-height: 300px;
+		.header-right {
+			gap: 10px;
+		}
+
+		#saveStatus {
+			display: none;
+		}
+
+		h1 {
+			margin-bottom: 40px;
+		}
+
+		.two-columns {
+			grid-template-columns: 1fr;
+		}
+
+		textarea,
+		.preview {
+			min-height: 340px;
+		}
+
+		.tools {
+			flex-wrap: wrap;
 		}
 	}
 </style>
