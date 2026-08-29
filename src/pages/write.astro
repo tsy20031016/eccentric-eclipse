@@ -5,8 +5,14 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 <html lang="zh-CN">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="description" content="TSY Blog 写作后台" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, viewport-fit=cover"
+		/>
+		<meta
+			name="description"
+			content="TSY Blog 写作后台"
+		/>
 		<title>Write · TSY</title>
 	</head>
 
@@ -146,8 +152,13 @@ $$
 							hidden
 						>
 							<div>
-								<strong>松开鼠标上传图片</strong>
-								<span>图片会自动插入正文</span>
+								<strong>
+									松开鼠标上传图片
+								</strong>
+
+								<span>
+									图片会自动插入正文
+								</span>
 							</div>
 						</div>
 					</div>
@@ -248,28 +259,28 @@ $$
 			const clearDraft =
 				document.querySelector("#clearDraft");
 
-
 			// ================================
 			// 日期默认值
 			// ================================
 
-			if (!date.value) {
-				date.value =
-					new Date()
-						.toISOString()
-						.slice(0, 10);
+			function today() {
+				return new Date()
+					.toISOString()
+					.slice(0, 10);
 			}
 
+			if (!date.value) {
+				date.value = today();
+			}
 
 			// ================================
 			// 草稿系统
 			// ================================
 
 			const DRAFT_KEY =
-				"tsy-blog-draft-v3";
+				"tsy-blog-draft-v4";
 
 			let saveTimer = null;
-
 
 			function getDraft() {
 				return {
@@ -282,31 +293,36 @@ $$
 				};
 			}
 
-
 			function saveDraft() {
-				const draft = getDraft();
+				try {
+					const draft = getDraft();
 
-				localStorage.setItem(
-					DRAFT_KEY,
-					JSON.stringify(draft)
-				);
-
-				saveStatus.textContent =
-					"● 草稿已保存";
-			}
-
-
-			function loadDraft() {
-				const raw =
-					localStorage.getItem(
-						DRAFT_KEY
+					localStorage.setItem(
+						DRAFT_KEY,
+						JSON.stringify(draft)
 					);
 
-				if (!raw) {
-					return;
+					saveStatus.textContent =
+						"● 草稿已保存";
+				} catch (error) {
+					console.error(
+						"保存草稿失败",
+						error
+					);
 				}
+			}
 
+			function loadDraft() {
 				try {
+					const raw =
+						localStorage.getItem(
+							DRAFT_KEY
+						);
+
+					if (!raw) {
+						return;
+					}
+
 					const draft =
 						JSON.parse(raw);
 
@@ -320,10 +336,7 @@ $$
 						draft.category || "随笔";
 
 					date.value =
-						draft.date ||
-						new Date()
-							.toISOString()
-							.slice(0, 10);
+						draft.date || today();
 
 					tags.value =
 						draft.tags || "";
@@ -333,7 +346,6 @@ $$
 
 					saveStatus.textContent =
 						"● 已恢复草稿";
-
 				} catch (error) {
 					console.error(
 						"读取草稿失败",
@@ -341,7 +353,6 @@ $$
 					);
 				}
 			}
-
 
 			function scheduleSave() {
 				saveStatus.textContent =
@@ -355,7 +366,6 @@ $$
 						500
 					);
 			}
-
 
 			[
 				title,
@@ -376,9 +386,7 @@ $$
 				);
 			});
 
-
 			loadDraft();
-
 
 			// ================================
 			// Markdown 简单预览
@@ -391,95 +399,82 @@ $$
 					.replaceAll(">", "&gt;");
 			}
 
-
 			function markdownToHtml(markdown) {
 				let html =
 					escapeHtml(markdown);
 
-				html =
-					html.replace(
-						/^### (.*)$/gm,
-						"<h3>$1</h3>"
-					);
+				html = html.replace(
+					/^### (.*)$/gm,
+					"<h3>$1</h3>"
+				);
+
+				html = html.replace(
+					/^## (.*)$/gm,
+					"<h2>$1</h2>"
+				);
+
+				html = html.replace(
+					/^# (.*)$/gm,
+					"<h1>$1</h1>"
+				);
+
+				html = html.replace(
+					/\*\*(.*?)\*\*/g,
+					"<strong>$1</strong>"
+				);
+
+				html = html.replace(
+					/\*(.*?)\*/g,
+					"<em>$1</em>"
+				);
+
+				html = html.replace(
+					/!\[(.*?)\]\((.*?)\)/g,
+					'<img src="$2" alt="$1" />'
+				);
+
+				html = html.replace(
+					/\[(.*?)\]\((.*?)\)/g,
+					'<a href="$2">$1</a>'
+				);
+
+				html = html.replace(
+					/^> (.*)$/gm,
+					"<blockquote>$1</blockquote>"
+				);
+
+				html = html.replace(
+					/^- (.*)$/gm,
+					"<li>$1</li>"
+				);
+
+				html = html.replace(
+					/(<li>.*<\/li>)/gs,
+					"<ul>$1</ul>"
+				);
+
+				html = html.replace(
+					/\n\n/g,
+					"</p><p>"
+				);
 
 				html =
-					html.replace(
-						/^## (.*)$/gm,
-						"<h2>$1</h2>"
-					);
+					"<p>" +
+					html +
+					"</p>";
 
-				html =
-					html.replace(
-						/^# (.*)$/gm,
-						"<h1>$1</h1>"
-					);
+				html = html.replace(
+					/<p>(<h[1-3]>)/g,
+					"$1"
+				);
 
-				html =
-					html.replace(
-					(/\*\*(.*?)\*\*/g),
-						"<strong>$1</strong>"
-					);
-
-				html =
-					html.replace(
-					(/\*(.*?)\*/g),
-						"<em>$1</em>"
-					);
-
-				html =
-					html.replace(
-						/!\[(.*?)\]\((.*?)\)/g,
-						'<img src="$2" alt="$1" />'
-					);
-
-				html =
-					html.replace(
-						/\[(.*?)\]\((.*?)\)/g,
-						'<a href="$2">$1</a>'
-					);
-
-				html =
-					html.replace(
-						/^> (.*)$/gm,
-						"<blockquote>$1</blockquote>"
-					);
-
-				html =
-					html.replace(
-						/^- (.*)$/gm,
-						"<li>$1</li>"
-					);
-
-				html =
-					html.replace(
-						/(<li>.*<\/li>)/gs,
-						"<ul>$1</ul>"
-					);
-
-				html =
-					html.replace(
-						/\n\n/g,
-						"</p><p>"
-					);
-
-				html =
-					"<p>" + html + "</p>";
-
-				html =
-					html.replace(
-						/<p>(<h[1-3]>)/g,
-						"$1"
-					);
-
-				html =
-					html.replace(
-						/(<\/h[1-3]>)<\/p>/g,
-						"$1"
-					);
+				html = html.replace(
+					/(<\/h[1-3]>)<\/p>/g,
+					"$1"
+				);
 
 				return html;
 			}
-
 
 			function showPreview() {
 				preview.innerHTML =
@@ -499,7 +494,6 @@ $$
 				);
 			}
 
-
 			function showEditor() {
 				content.hidden = false;
 				preview.hidden = true;
@@ -513,7 +507,6 @@ $$
 				);
 			}
 
-
 			editTab.addEventListener(
 				"click",
 				showEditor
@@ -524,56 +517,261 @@ $$
 				showPreview
 			);
 
+			// ================================
+			// 图片压缩
+			// ================================
+
+			async function compressImage(file) {
+				const maxWidth = 1920;
+				const maxHeight = 1920;
+				const quality = 0.82;
+
+				if (
+					file.type === "image/gif" ||
+					file.type === "image/svg+xml"
+				) {
+					return file;
+				}
+
+				if (
+					file.size < 1024 * 1024
+				) {
+					return file;
+				}
+
+				return new Promise(
+					(resolve, reject) => {
+						const img =
+							new Image();
+
+						const objectUrl =
+							URL.createObjectURL(
+								file
+							);
+
+						img.onload = () => {
+							URL.revokeObjectURL(
+								objectUrl
+							);
+
+							let width =
+								img.naturalWidth;
+
+							let height =
+								img.naturalHeight;
+
+							const scale =
+								Math.min(
+									1,
+									maxWidth /
+										width,
+									maxHeight /
+										height
+								);
+
+							width =
+								Math.round(
+									width *
+										scale
+								);
+
+							height =
+								Math.round(
+									height *
+										scale
+								);
+
+							const canvas =
+								document.createElement(
+									"canvas"
+								);
+
+							canvas.width =
+								width;
+
+							canvas.height =
+								height;
+
+							const ctx =
+								canvas.getContext(
+									"2d"
+								);
+
+							if (!ctx) {
+								resolve(file);
+								return;
+							}
+
+							ctx.drawImage(
+								img,
+								0,
+								0,
+								width,
+								height
+							);
+
+							canvas.toBlob(
+								(blob) => {
+									if (!blob) {
+										resolve(file);
+										return;
+									}
+
+									const compressed =
+										new File(
+											[blob],
+											file.name.replace(
+												/\.[^.]+$/,
+												".jpg"
+											),
+											{
+												type:
+													"image/jpeg",
+												lastModified:
+													Date.now(),
+											}
+										);
+
+									resolve(
+										compressed
+									);
+								},
+								"image/jpeg",
+								quality
+							);
+						};
+
+						img.onerror = () => {
+							URL.revokeObjectURL(
+								objectUrl
+							);
+
+							resolve(file);
+						};
+
+						img.src =
+							objectUrl;
+					}
+				);
+			}
+
+			// ================================
+			// 带超时的 fetch
+			// ================================
+
+			async function fetchWithTimeout(
+				url,
+				options = {},
+				timeout = 30000
+			) {
+				const controller =
+					new AbortController();
+
+				const timer =
+					setTimeout(
+						() =>
+							controller.abort(),
+						timeout
+					);
+
+				try {
+					return await fetch(
+						url,
+						{
+							...options,
+							signal:
+								controller.signal,
+						}
+					);
+				} finally {
+					clearTimeout(timer);
+				}
+			}
 
 			// ================================
 			// 图片上传
 			// ================================
 
+			let uploadingImages = 0;
+
 			async function uploadImage(file) {
 				if (!file) {
-					return;
+					return false;
 				}
 
 				if (
-					!file.type.startsWith("image/")
+					!file.type.startsWith(
+						"image/"
+					)
 				) {
 					uploadStatus.textContent =
 						"请选择图片文件。";
 
-					return;
+					return false;
 				}
+
+				const originalSize =
+					file.size;
 
 				if (
-					file.size >
-					10 * 1024 * 1024
+					originalSize >
+					20 * 1024 * 1024
 				) {
 					uploadStatus.textContent =
-						"图片不能超过 10MB。";
+						"原图片不能超过 20MB。";
 
-					return;
+					return false;
 				}
 
-				uploadStatus.textContent =
-					`正在上传 ${file.name}…`;
+				uploadingImages++;
 
 				try {
-					const response =
-						await fetch(
-							apiUrl + "upload",
-							{
-								method: "POST",
+					uploadStatus.textContent =
+						"正在准备图片…";
 
-								headers: {
-									"Content-Type":
-										file.type,
-								},
-
-								body: file,
-							}
+					const uploadFile =
+						await compressImage(
+							file
 						);
 
-					const result =
-						await response.json();
+					const sizeText =
+						(
+							uploadFile.size /
+							1024 /
+							1024
+						).toFixed(1);
+
+					uploadStatus.textContent =
+						`正在上传图片（${sizeText}MB）…`;
+
+					const response =
+						await fetchWithTimeout(
+							apiUrl +
+								"upload",
+							{
+								method:
+									"POST",
+								headers: {
+									"Content-Type":
+										uploadFile.type ||
+										"image/jpeg",
+								},
+								body:
+									uploadFile,
+							},
+							30000
+						);
+
+					let result;
+
+					try {
+						result =
+							await response.json();
+					} catch {
+						throw new Error(
+							"服务器返回了无效响应。"
+						);
+					}
 
 					if (
 						!response.ok ||
@@ -581,7 +779,8 @@ $$
 					) {
 						throw new Error(
 							result.message ||
-							"图片上传失败"
+								result.error ||
+								"图片上传失败"
 						);
 					}
 
@@ -597,15 +796,38 @@ $$
 
 					saveDraft();
 
+					return true;
 				} catch (error) {
-					console.error(error);
+					console.error(
+						"图片上传失败",
+						error
+					);
 
-					uploadStatus.textContent =
-						"图片上传失败：" +
-						error.message;
+					if (
+						error?.name ===
+						"AbortError"
+					) {
+						uploadStatus.textContent =
+							"图片上传超时，请检查手机网络后重试。";
+					} else {
+						uploadStatus.textContent =
+							"图片上传失败：" +
+							(error?.message ||
+								"未知错误");
+					}
+
+					return false;
+				} finally {
+					uploadingImages--;
+
+					if (
+						uploadingImages === 0
+					) {
+						imageInput.value =
+							"";
+					}
 				}
 			}
-
 
 			function insertAtCursor(text) {
 				const start =
@@ -621,7 +843,9 @@ $$
 					);
 
 				const after =
-					content.value.slice(end);
+					content.value.slice(
+						end
+					);
 
 				content.value =
 					before +
@@ -642,19 +866,32 @@ $$
 				scheduleSave();
 			}
 
-
 			imageInput.addEventListener(
 				"change",
 				async () => {
-					const file =
-						imageInput.files?.[0];
+					const files =
+						Array.from(
+							imageInput.files ||
+								[]
+						);
 
-					await uploadImage(file);
+					const images =
+						files.filter(
+							(file) =>
+								file.type.startsWith(
+									"image/"
+								)
+						);
 
-					imageInput.value = "";
+					for (
+						const file of images
+					) {
+						await uploadImage(
+							file
+						);
+					}
 				}
 			);
-
 
 			// ================================
 			// 拖入图片
@@ -670,7 +907,6 @@ $$
 				}
 			);
 
-
 			dropZone.addEventListener(
 				"dragleave",
 				(event) => {
@@ -685,7 +921,6 @@ $$
 				}
 			);
 
-
 			dropZone.addEventListener(
 				"drop",
 				async (event) => {
@@ -696,22 +931,27 @@ $$
 
 					const files =
 						Array.from(
-							event.dataTransfer.files
+							event.dataTransfer
+								.files
 						);
 
 					const images =
-						files.filter((file) =>
-							file.type.startsWith(
-								"image/"
-							)
+						files.filter(
+							(file) =>
+								file.type.startsWith(
+									"image/"
+								)
 						);
 
-					for (const file of images) {
-						await uploadImage(file);
+					for (
+						const file of images
+					) {
+						await uploadImage(
+							file
+						);
 					}
 				}
 			);
-
 
 			// ================================
 			// 清空草稿
@@ -732,12 +972,7 @@ $$
 					title.value = "";
 					description.value = "";
 					category.value = "随笔";
-
-					date.value =
-						new Date()
-							.toISOString()
-							.slice(0, 10);
-
+					date.value = today();
 					tags.value = "";
 					content.value = "";
 
@@ -749,12 +984,13 @@ $$
 						"● 草稿已清空";
 
 					message.textContent = "";
-					uploadStatus.textContent = "";
+
+					uploadStatus.textContent =
+						"";
 
 					showEditor();
 				}
 			);
-
 
 			// ================================
 			// 发布文章
@@ -763,6 +999,15 @@ $$
 			button.addEventListener(
 				"click",
 				async () => {
+					if (
+						uploadingImages > 0
+					) {
+						message.textContent =
+							"请等图片上传完成后再发布。";
+
+						return;
+					}
+
 					if (
 						!title.value.trim()
 					) {
@@ -786,7 +1031,8 @@ $$
 					button.textContent =
 						"正在发布……";
 
-					message.textContent = "";
+					message.textContent =
+						"";
 
 					try {
 						const tagList =
@@ -799,41 +1045,51 @@ $$
 								.filter(Boolean);
 
 						const response =
-							await fetch(
+							await fetchWithTimeout(
 								apiUrl,
 								{
-									method: "POST",
-
+									method:
+										"POST",
 									headers: {
 										"Content-Type":
 											"application/json",
 									},
-
 									body:
-										JSON.stringify({
-											title:
-												title.value,
+										JSON.stringify(
+											{
+												title:
+													title.value,
 
-											description:
-												description.value,
+												description:
+													description.value,
 
-											category:
-												category.value,
+												category:
+													category.value,
 
-											date:
-												date.value,
+												date:
+													date.value,
 
-											tags:
-												tagList,
+												tags:
+													tagList,
 
-											content:
-												content.value,
-										}),
-								}
+												content:
+													content.value,
+											}
+										),
+								},
+								30000
 							);
 
-						const result =
-							await response.json();
+						let result;
+
+						try {
+							result =
+								await response.json();
+						} catch {
+							throw new Error(
+								"服务器返回了无效响应。"
+							);
+						}
 
 						if (
 							!response.ok ||
@@ -841,7 +1097,8 @@ $$
 						) {
 							throw new Error(
 								result.message ||
-								"发布失败"
+									result.error ||
+									"发布失败"
 							);
 						}
 
@@ -860,20 +1117,27 @@ $$
 						tags.value = "";
 						content.value = "";
 
-						date.value =
-							new Date()
-								.toISOString()
-								.slice(0, 10);
+						date.value = today();
 
 						showEditor();
-
 					} catch (error) {
-						console.error(error);
+						console.error(
+							"发布失败",
+							error
+						);
 
-						message.textContent =
-							"发布失败：" +
-							error.message;
-
+						if (
+							error?.name ===
+							"AbortError"
+						) {
+							message.textContent =
+								"发布超时，请检查网络后重试。";
+						} else {
+							message.textContent =
+								"发布失败：" +
+								(error?.message ||
+									"未知错误");
+						}
 					} finally {
 						button.disabled = false;
 
@@ -885,7 +1149,6 @@ $$
 		</script>
 	</body>
 </html>
-
 
 <style>
 	* {
@@ -939,6 +1202,7 @@ $$
 
 	header span {
 		color: #999;
+
 		font-size: 11px;
 		letter-spacing: 0.14em;
 	}
@@ -1007,11 +1271,11 @@ $$
 		border: 1px solid #ddd;
 		border-radius: 5px;
 
-		background: white;
+		background: #fff;
 
 		padding: 14px 16px;
 
-		color: #222;
+		color: #111;
 
 		font: inherit;
 
@@ -1020,6 +1284,12 @@ $$
 		transition:
 			border-color 0.2s,
 			box-shadow 0.2s;
+	}
+
+	input::placeholder,
+	textarea::placeholder {
+		color: #aaa;
+		opacity: 1;
 	}
 
 	input:focus,
@@ -1034,6 +1304,7 @@ $$
 
 	.two-columns {
 		display: grid;
+
 		grid-template-columns:
 			1fr 1fr;
 
@@ -1063,6 +1334,7 @@ $$
 		padding: 6px 10px;
 
 		font-size: 12px;
+
 		cursor: pointer;
 	}
 
@@ -1085,6 +1357,16 @@ $$
 		resize: vertical;
 
 		line-height: 1.8;
+
+		color: #111;
+
+		background: #fff;
+
+		-webkit-text-fill-color: #111;
+
+		opacity: 1;
+
+		caret-color: #111;
 	}
 
 	.preview {
@@ -1100,6 +1382,8 @@ $$
 		padding: 20px 22px;
 
 		line-height: 1.9;
+
+		color: #202020;
 	}
 
 	.preview h1,
@@ -1132,7 +1416,6 @@ $$
 		display: block;
 
 		max-width: 100%;
-
 		height: auto;
 
 		margin: 20px 0;
@@ -1193,6 +1476,7 @@ $$
 
 	.drop-overlay span {
 		color: #888;
+
 		font-size: 13px;
 	}
 
@@ -1239,6 +1523,8 @@ $$
 		color: #888;
 
 		font-size: 13px;
+
+		line-height: 1.6;
 	}
 
 	.bottom-actions {
@@ -1272,6 +1558,7 @@ $$
 
 	.publish-button:disabled {
 		cursor: wait;
+
 		opacity: 0.5;
 	}
 
@@ -1283,6 +1570,8 @@ $$
 		color: #777;
 
 		font-size: 14px;
+
+		line-height: 1.6;
 	}
 
 	@media (max-width: 600px) {
@@ -1318,6 +1607,17 @@ $$
 
 		.tools {
 			flex-wrap: wrap;
+		}
+
+		.upload-button,
+		.secondary-button {
+			min-height: 44px;
+		}
+
+		input,
+		select,
+		textarea {
+			font-size: 16px;
 		}
 	}
 </style>
