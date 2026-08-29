@@ -1620,4 +1620,25 @@ $$
 			font-size: 16px;
 		}
 	}
+
+/* 正文编辑区文字颜色 */
+#editor,
+#content,
+.editor-content,
+[contenteditable="true"] {
+	color: #111 !important;
+	-webkit-text-fill-color: #111 !important;
+}
+
+/* 编辑区占位提示保持灰色 */
+[contenteditable="true"]:empty::before {
+	color: #999 !important;
+}
+
+/* 编辑区选中文字 */
+[contenteditable="true"]::selection {
+	background: #dcdcdc;
+	color: #111;
+}
+
 </style>
