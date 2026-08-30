@@ -2,7 +2,7 @@
 import { getCollection } from "astro:content";
 
 const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
-			const ADMIN_PASSWORD = "20031016";
+
 // 文章管理列表（构建时生成，每次部署后自动更新）
 const postsIndex = (await getCollection("posts"))
 	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
@@ -472,6 +472,8 @@ $$"
 		</main>
 
 		<script define:vars={{ apiUrl, postsIndex, rawContents }}>
+			const ADMIN_PASSWORD = "20031016";
+
 			const title =
 				document.querySelector("#title");
 
