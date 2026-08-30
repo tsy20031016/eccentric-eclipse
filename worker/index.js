@@ -1,63 +1,66 @@
 /**
- * TSY Blog Worker v2
+ * TSY Blog Worker v3
  *
- * 在 v1（发布文章 / 上传图片）的基础上新增：
- *   POST /posts/update  更新已有文章
- *   POST /posts/delete  删除文章
+ * 必须整份部署到 Cloudflare Worker「tsy-blog-api」。
+ * 线上旧版只认识 POST / 和 POST /upload，对编辑/删除会返回纯文本
+ * 「Not Found」，写作后台就会显示网络/接口失败。
  *
- * 文章以 Markdown 文件的形式提交到 GitHub 仓库（src/content/posts/），
- * push 会自动触发 GitHub Pages 重新部署。
+ * 与 src/pages/write.astro 对齐的接口：
+ *   POST /                发布新文章
+ *   POST /upload          上传图片（请求体是图片二进制，Content-Type 为图片 MIME）
+ *   POST /posts/update    更新已有文章（JSON 里带 filename）
+ *   POST /posts/delete    删除文章（JSON 里带 filename）
  *
- * 所需密钥 / 变量（Cloudflare Worker Settings → Variables and Secrets）：
- *   GITHUB_TOKEN  有 repo 写权限的 GitHub Personal Access Token（必需）
- *   GITHUB_OWNER  仓库所有者，默认 tsy20031016
- *   GITHUB_REPO   仓库名，默认 eccentric-eclipse
- *   GITHUB_BRANCH 分支，默认 main
- *   SITE_BASE     博客站点地址（拼图片 URL 用），
- *                 默认 https://tsy20031016.github.io/eccentric-eclipse
- *   WRITE_TOKEN   可选。设置后所有写操作都要求请求头 X-Write-Token 匹配
+ * 额外：
+ *   GET  /                健康检查（纯文本，兼容旧版）
+ *   GET  /version         确认已部署 v3（JSON，含路由列表）
+ *
+ * Cloudflare → Worker → Settings → Variables and Secrets：
+ *   GITHUB_TOKEN   有 repo 写权限的 GitHub PAT（必需）
+ *   GITHUB_OWNER   默认 tsy20031016
+ *   GITHUB_REPO    默认 eccentric-eclipse
+ *   GITHUB_BRANCH  默认 main
+ *   SITE_BASE      默认 https://tsy20031016.github.io/eccentric-eclipse
+ *   WRITE_TOKEN    可选。设置后写操作需要请求头 X-Write-Token
  */
 
 const GITHUB_API = "https://api.github.com";
-
 const POSTS_DIR = "src/content/posts";
 const IMAGES_DIR = "public/images";
+const VERSION = 3;
+
+const CORS = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Headers": "Content-Type, X-Write-Token",
+	"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+	"Access-Control-Max-Age": "86400",
+};
 
 export default {
 	async fetch(request, env) {
 		if (request.method === "OPTIONS") {
-			return new Response(null, { status: 204, headers: cors() });
+			return new Response(null, { status: 204, headers: CORS });
 		}
-
-		const url = new URL(request.url);
 
 		let response;
 
 		try {
-			if (request.method === "GET") {
-				response = health();
-			} else if (request.method === "POST" && (url.pathname === "/" || url.pathname === "")) {
-				response = await createPost(request, env);
-			} else if (request.method === "POST" && url.pathname === "/upload") {
-				response = await uploadImage(request, env);
-			} else if (request.method === "POST" && url.pathname === "/posts/update") {
-				response = await updatePost(request, env);
-			} else if (request.method === "POST" && url.pathname === "/posts/delete") {
-				response = await deletePost(request, env);
-			} else {
-				response = json({ success: false, message: "接口不存在。" }, 404);
-			}
+			response = await route(request, env || {});
 		} catch (error) {
 			console.error(error);
-			response = json({
-				success: false,
-				message: "服务器发生错误。",
-				error: String((error && error.message) || error),
-			}, 500);
+			response = json(
+				{
+					success: false,
+					message: "服务器发生错误。",
+					error: String((error && error.message) || error),
+				},
+				500
+			);
 		}
 
 		const headers = new Headers(response.headers);
-		for (const [key, value] of Object.entries(cors())) {
+
+		for (const [key, value] of Object.entries(CORS)) {
 			headers.set(key, value);
 		}
 
@@ -69,15 +72,73 @@ export default {
 	},
 };
 
-// ========================================
-// 路由处理
-// ========================================
+async function route(request, env) {
+	const url = new URL(request.url);
+	const path = normalizePath(url.pathname);
+	const method = request.method.toUpperCase();
+
+	if (method === "GET" || method === "HEAD") {
+		if (path === "/version") {
+			return json({
+				success: true,
+				version: VERSION,
+				message: "TSY Blog API v3",
+				routes: [
+					"POST /",
+					"POST /upload",
+					"POST /posts/update",
+					"POST /posts/delete",
+					"GET /version",
+				],
+			});
+		}
+
+		return health();
+	}
+
+	if (method === "POST" || method === "PUT") {
+		if (path === "/") {
+			return createPost(request, env);
+		}
+
+		if (path === "/upload") {
+			return uploadImage(request, env);
+		}
+
+		if (path === "/posts/update" || path === "/update") {
+			return updatePost(request, env);
+		}
+
+		if (path === "/posts/delete" || path === "/delete") {
+			return deletePost(request, env);
+		}
+	}
+
+	if (method === "DELETE" && (path === "/posts/delete" || path === "/delete")) {
+		return deletePost(request, env);
+	}
+
+	return json(
+		{
+			success: false,
+			message: "接口不存在。",
+			method,
+			path,
+		},
+		404
+	);
+}
 
 function health() {
 	return new Response("TSY Blog API is running.", {
 		status: 200,
 		headers: { "Content-Type": "text/plain; charset=utf-8" },
 	});
+}
+
+function normalizePath(pathname) {
+	const path = String(pathname || "/").replace(/\/+$/, "");
+	return path || "/";
 }
 
 /** POST / —— 发布新文章 */
@@ -93,10 +154,8 @@ async function createPost(request, env) {
 	}
 
 	const filename = `${slugify(body.title)}-${Date.now()}.md`;
-
 	const fileContent =
 		buildFrontmatter(body) + String(body.content).replace(/\r\n/g, "\n");
-
 	const path = `${POSTS_DIR}/${filename}`;
 
 	await commitFile(env, {
@@ -108,29 +167,40 @@ async function createPost(request, env) {
 	return json({ success: true, message: "文章已发布。", filename });
 }
 
-/** POST /upload —— 上传图片 */
+/** POST /upload —— 上传图片（原始二进制 + Content-Type） */
 async function uploadImage(request, env) {
 	if (!checkWriteToken(request, env)) {
 		return json({ success: false, message: "没有权限。" }, 401);
 	}
 
-	const contentType = request.headers.get("Content-Type") || "";
+	const contentType = (request.headers.get("Content-Type") || "")
+		.split(";")[0]
+		.trim()
+		.toLowerCase();
 
 	const ext = {
 		"image/jpeg": "jpg",
+		"image/jpg": "jpg",
 		"image/png": "png",
 		"image/gif": "gif",
 		"image/webp": "webp",
 	}[contentType];
 
 	if (!ext) {
-		return json({ success: false, message: "只支持 JPG / PNG / GIF / WebP。" }, 400);
+		return json(
+			{ success: false, message: "只支持 JPG / PNG / GIF / WebP。" },
+			400
+		);
 	}
 
 	const buffer = await request.arrayBuffer();
 
 	if (!buffer.byteLength) {
 		return json({ success: false, message: "图片内容为空。" }, 400);
+	}
+
+	if (buffer.byteLength > 10 * 1024 * 1024) {
+		return json({ success: false, message: "图片不能超过 10MB。" }, 400);
 	}
 
 	const name = `${Date.now()}-${randomSuffix(8)}.${ext}`;
@@ -141,7 +211,9 @@ async function uploadImage(request, env) {
 		message: `Upload image: ${name}`,
 	});
 
-	const siteBase = (env.SITE_BASE || "https://tsy20031016.github.io/eccentric-eclipse").replace(/\/?$/, "");
+	const siteBase = (
+		env.SITE_BASE || "https://tsy20031016.github.io/eccentric-eclipse"
+	).replace(/\/?$/, "");
 
 	return json({ success: true, url: `${siteBase}/images/${name}` });
 }
@@ -165,7 +237,6 @@ async function updatePost(request, env) {
 	}
 
 	const path = `${POSTS_DIR}/${body.filename}`;
-
 	const existing = await getFile(env, path);
 
 	if (!existing) {
@@ -200,7 +271,6 @@ async function deletePost(request, env) {
 	}
 
 	const path = `${POSTS_DIR}/${body.filename}`;
-
 	const existing = await getFile(env, path);
 
 	if (!existing) {
@@ -216,15 +286,17 @@ async function deletePost(request, env) {
 	return json({ success: true, message: "文章已删除。" });
 }
 
-// ========================================
-// GitHub Contents API
-// ========================================
-
 function githubConfig(env) {
-	const token = env.GITHUB_TOKEN || env.GH_TOKEN || env.TOKEN;
+	const token =
+		env.GITHUB_TOKEN ||
+		env.GH_TOKEN ||
+		env.TOKEN ||
+		env.GITHUB_PAT;
 
 	if (!token) {
-		throw new Error("Worker 未配置 GITHUB_TOKEN，请在 Cloudflare 设置里添加。");
+		throw new Error(
+			"Worker 未配置 GITHUB_TOKEN，请在 Cloudflare Settings → Variables and Secrets 里添加。"
+		);
 	}
 
 	return {
@@ -235,41 +307,59 @@ function githubConfig(env) {
 	};
 }
 
-async function githubRequest(env, repoPath, init = {}) {
-	const { token, owner, repo } = githubConfig(env);
+async function githubRequest(env, repoPath, init = {}, useRef = false) {
+	const { token, owner, repo, branch } = githubConfig(env);
+	const encoded = encodePath(repoPath);
+	const query = useRef ? `?ref=${encodeURIComponent(branch)}` : "";
 
-	return fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodePath(repoPath)}`, {
-		...init,
-		headers: {
-			Authorization: `Bearer ${token}`,
-			Accept: "application/vnd.github+json",
-			"User-Agent": "tsy-blog-api",
-			"X-GitHub-Api-Version": "2022-11-28",
-			...(init.headers || {}),
-		},
-	});
+	return fetch(
+		`${GITHUB_API}/repos/${owner}/${repo}/contents/${encoded}${query}`,
+		{
+			...init,
+			headers: {
+				Authorization: `Bearer ${token}`,
+				Accept: "application/vnd.github+json",
+				"User-Agent": "tsy-blog-api",
+				"X-GitHub-Api-Version": "2022-11-28",
+				...(init.headers || {}),
+			},
+		}
+	);
 }
 
-/** 查询文件（拿 sha 用），不存在返回 null */
+async function githubError(response, fallback) {
+	let detail = "";
+
+	try {
+		const data = await response.json();
+		detail = data && data.message ? `：${data.message}` : "";
+	} catch {
+		detail = "";
+	}
+
+	return new Error(`${fallback}（HTTP ${response.status}）${detail}`);
+}
+
 async function getFile(env, repoPath) {
-	const response = await githubRequest(env, repoPath, {
-		method: "GET",
-	});
+	const response = await githubRequest(env, repoPath, { method: "GET" }, true);
 
 	if (response.status === 404) {
 		return null;
 	}
 
 	if (!response.ok) {
-		throw new Error(`GitHub API 错误（HTTP ${response.status}）`);
+		throw await githubError(response, "GitHub API 错误");
 	}
 
 	const data = await response.json();
 
+	if (!data || !data.sha) {
+		return null;
+	}
+
 	return { sha: data.sha };
 }
 
-/** 提交文本文件（新建或更新） */
 async function commitFile(env, { path, content, sha, message }) {
 	const payload = {
 		message,
@@ -288,11 +378,10 @@ async function commitFile(env, { path, content, sha, message }) {
 	});
 
 	if (!response.ok) {
-		throw new Error(`GitHub 提交失败（HTTP ${response.status}）`);
+		throw await githubError(response, "GitHub 提交失败");
 	}
 }
 
-/** 提交二进制文件（图片） */
 async function commitBinary(env, { path, bytes, message }) {
 	const payload = {
 		message,
@@ -307,11 +396,10 @@ async function commitBinary(env, { path, bytes, message }) {
 	});
 
 	if (!response.ok) {
-		throw new Error(`GitHub 提交失败（HTTP ${response.status}）`);
+		throw await githubError(response, "GitHub 提交失败");
 	}
 }
 
-/** 删除文件 */
 async function deleteFile(env, { path, sha, message }) {
 	const payload = {
 		message,
@@ -326,20 +414,8 @@ async function deleteFile(env, { path, sha, message }) {
 	});
 
 	if (!response.ok) {
-		throw new Error(`GitHub 删除失败（HTTP ${response.status}）`);
+		throw await githubError(response, "GitHub 删除失败");
 	}
-}
-
-// ========================================
-// 工具函数
-// ========================================
-
-function cors() {
-	return {
-		"Access-Control-Allow-Origin": "*",
-		"Access-Control-Allow-Headers": "Content-Type, X-Write-Token",
-		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-	};
 }
 
 function json(data, status = 200) {
@@ -350,14 +426,19 @@ function json(data, status = 200) {
 }
 
 async function readJson(request) {
+	const text = await request.text();
+
+	if (!text) {
+		return {};
+	}
+
 	try {
-		return await request.json();
+		return JSON.parse(text);
 	} catch {
 		return {};
 	}
 }
 
-/** 可选的写操作鉴权：只有设置了 WRITE_TOKEN 变量才会启用 */
 function checkWriteToken(request, env) {
 	if (!env.WRITE_TOKEN) {
 		return true;
@@ -366,13 +447,16 @@ function checkWriteToken(request, env) {
 	return request.headers.get("X-Write-Token") === env.WRITE_TOKEN;
 }
 
-/** 防路径穿越：只允许仓库 posts 目录下的 .md 文件名 */
 function validateFilename(filename) {
 	if (!filename || typeof filename !== "string") {
 		return "缺少文件名。";
 	}
 
-	if (filename.includes("/") || filename.includes("\\") || filename.includes("..")) {
+	if (
+		filename.includes("/") ||
+		filename.includes("\\") ||
+		filename.includes("..")
+	) {
 		return "文件名不合法。";
 	}
 
@@ -395,7 +479,6 @@ function slugify(text) {
 	return slug || "post";
 }
 
-/** 生成与文章 schema 对齐的 frontmatter */
 function buildFrontmatter(post) {
 	let fm = "---\n";
 
@@ -425,7 +508,6 @@ function yamlString(value) {
 
 function randomSuffix(length) {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-
 	let out = "";
 
 	for (let i = 0; i < length; i++) {

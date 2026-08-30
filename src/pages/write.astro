@@ -246,17 +246,14 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 					     编辑区域
 					================================ -->
 
-					<div
-						class="editor-wrapper"
-						id="dropZone"
-					>
+					<div class="editor-wrapper">
 						<div
 							id="content"
 							class="content-editor"
 							contenteditable="true"
 							role="textbox"
 							aria-multiline="true"
-							data-placeholder="在这里写下你的想法……
+							data-placeholder="在这里写下正文。按回车分段。
 
 支持 Markdown，例如：
 
@@ -264,24 +261,19 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 
 ## 二级标题
 
-这是正文。
+这是一段正文。
 
-**粗体**
+这是下一段。
 
-*斜体*
+**粗体**  *斜体*
 
-- 列表
 - 列表
 
 > 引用
 
-![图片](图片地址)
-
 $$
 f(x)=x^2
-$$
-
-你也可以直接把图片拖进这里。"
+$$"
 							spellcheck="false"
 						></div>
 
@@ -290,25 +282,50 @@ $$
 							class="preview"
 							hidden
 						></div>
+					</div>
+
+					<!-- ================================
+					     图片（与正文分开）
+					================================ -->
+
+					<div class="photos-field">
+						<div class="photos-header">
+							<div>
+								<span>图片</span>
+								<small>
+									和正文分开添加，发布后会出现在文章末尾
+								</small>
+							</div>
+						</div>
 
 						<div
-							id="dropOverlay"
-							class="drop-overlay"
-							hidden
+							class="photo-drop"
+							id="photoDropZone"
 						>
-							<div class="drop-content">
-								<div class="drop-icon">
-									↑
-								</div>
+							<input
+								id="imageInput"
+								type="file"
+								accept="image/*"
+								multiple
+								hidden
+							/>
 
-								<strong>
-									松开鼠标上传图片
-								</strong>
+							<div
+								id="photoList"
+								class="photo-list"
+							></div>
 
-								<span>
-									图片会自动插入正文
-								</span>
-							</div>
+							<label
+								for="imageInput"
+								class="photo-add"
+							>
+								<span>＋</span>
+								添加图片
+							</label>
+
+							<p class="photo-hint">
+								点击添加，或把图片拖到这里。支持 JPG · PNG · GIF · WebP
+							</p>
 						</div>
 					</div>
 
@@ -317,21 +334,6 @@ $$
 					================================ -->
 
 					<div class="tools">
-						<label
-							for="imageInput"
-							class="tool-button"
-						>
-							<span>＋</span>
-							上传图片
-						</label>
-
-						<input
-							id="imageInput"
-							type="file"
-							accept="image/*"
-							hidden
-						/>
-
 						<button
 							type="button"
 							id="clearDraft"
@@ -339,10 +341,6 @@ $$
 						>
 							清空草稿
 						</button>
-
-						<span class="tool-hint">
-							支持 JPG · PNG · GIF · WebP
-						</span>
 					</div>
 
 					<!-- ================================
@@ -1460,11 +1458,22 @@ $$
 					);
 				}
 
+				const rawText = await response.text();
+
 				let result;
 
 				try {
-					result = await response.json();
+					result = JSON.parse(rawText);
 				} catch (error) {
+					if (
+						rawText === "Not Found" ||
+						response.status === 404
+					) {
+						throw new Error(
+							"线上 Worker 仍是旧版（不支持编辑/删除）。请把仓库 worker/index.js 整份部署到 tsy-blog-api，部署后访问 /version 应返回 version: 3"
+						);
+					}
+
 					throw new Error(
 						"API 返回格式异常，请确认已部署仓库 worker/ 目录里的新版 Worker"
 					);
