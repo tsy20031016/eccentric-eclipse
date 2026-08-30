@@ -292,9 +292,6 @@ $$"
 						<div class="photos-header">
 							<div>
 								<span>图片</span>
-								<small>
-									和正文分开添加，发布后会出现在文章末尾
-								</small>
 							</div>
 						</div>
 
@@ -498,10 +495,7 @@ $$"
 				document.querySelector("#imageInput");
 
 			const dropZone =
-				document.querySelector("#dropZone");
-
-			const dropOverlay =
-				document.querySelector("#dropOverlay");
+				document.querySelector("#photoDropZone");
 
 			const uploadStatus =
 				document.querySelector("#uploadStatus");
@@ -1313,62 +1307,57 @@ $$"
 			// 拖入图片
 			// ========================================
 
-			dropZone.addEventListener(
-				"dragover",
-				(event) => {
-					event.preventDefault();
-
-					dropOverlay.hidden =
-						false;
-				}
-			);
-
-
-			dropZone.addEventListener(
-				"dragleave",
-				(event) => {
-					if (
-						!dropZone.contains(
-							event.relatedTarget
-						)
-					) {
-						dropOverlay.hidden =
-							true;
+			if (dropZone) {
+				dropZone.addEventListener(
+					"dragover",
+					(event) => {
+						event.preventDefault();
+						dropZone.classList.add("is-over");
 					}
-				}
-			);
+				);
 
-
-			dropZone.addEventListener(
-				"drop",
-				async (event) => {
-					event.preventDefault();
-
-					dropOverlay.hidden =
-						true;
-
-					const files =
-						Array.from(
-							event.dataTransfer.files
-						);
-
-					const images =
-						files.filter(
-							(file) =>
-								file.type.startsWith(
-									"image/"
-								)
-						);
-
-					for (
-						const file of images
-					) {
-						await uploadImage(
-							file
-						);
+				dropZone.addEventListener(
+					"dragleave",
+					(event) => {
+						if (
+							!dropZone.contains(
+								event.relatedTarget
+							)
+						) {
+							dropZone.classList.remove("is-over");
+						}
 					}
-				}
-			);
+				);
+
+				dropZone.addEventListener(
+					"drop",
+					async (event) => {
+						event.preventDefault();
+						dropZone.classList.remove("is-over");
+
+						const files =
+							Array.from(
+								event.dataTransfer.files
+							);
+
+						const images =
+							files.filter(
+								(file) =>
+									file.type.startsWith(
+										"image/"
+									)
+							);
+
+						for (
+							const file of images
+						) {
+							await uploadImage(
+								file
+							);
+						}
+					}
+				);
+			}
 
 
 			// ========================================
@@ -2526,6 +2515,82 @@ $$"
 		color: #aaa;
 
 		font-size: 12px;
+	}
+
+	.photos-field {
+		margin-top: 28px;
+	}
+
+	.photos-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 12px;
+	}
+
+	.photos-header span {
+		color: #171717;
+		font-size: 15px;
+		font-weight: 600;
+	}
+
+	.photo-drop {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 18px 18px 16px;
+		border: 1.5px dashed #d7d7d2;
+		border-radius: 16px;
+		background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(246,246,243,0.92));
+		transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+	}
+
+	.photo-drop.is-over {
+		border-color: #171717;
+		box-shadow: 0 12px 28px rgba(23, 23, 23, 0.08);
+		transform: translateY(-1px);
+	}
+
+	.photo-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		min-height: 16px;
+	}
+
+	.photo-add {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: fit-content;
+		padding: 10px 16px;
+		border: 1px solid #d9d9d5;
+		border-radius: 999px;
+		background: #fff;
+		color: #111;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+	}
+
+	.photo-add:hover {
+		background: #f4f4f1;
+		border-color: #cfcfc9;
+		transform: translateY(-1px);
+	}
+
+	.photo-add span {
+		font-size: 22px;
+		line-height: 1;
+	}
+
+	.photo-hint {
+		margin: 0;
+		color: #8a8a85;
+		font-size: 12px;
+		line-height: 1.6;
 	}
 
 	.upload-status {
