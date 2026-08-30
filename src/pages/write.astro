@@ -1706,7 +1706,7 @@ $$"
 
 			function unlockAdmin() {
 				const entered =
-					String(adminPassword.value || "").trim();
+					String(adminPassword.value ?? "");
 
 				if (entered !== ADMIN_PASSWORD) {
 					adminAuthMessage.textContent = "密码不正确。";
