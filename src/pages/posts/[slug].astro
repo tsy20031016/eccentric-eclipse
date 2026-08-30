@@ -138,6 +138,44 @@ const minutes = readingTime(post.body ?? "");
 </BaseLayout>
 
 <script>
+	function splitArticleParagraphs() {
+		const articleContent = document.querySelector(".article-content");
+
+		if (!articleContent) {
+			return;
+		}
+
+		const paragraphs = [...articleContent.querySelectorAll("p")];
+
+		paragraphs.forEach((paragraph) => {
+			const text = (paragraph.textContent || "").replace(/\u00a0/g, " ").trim();
+
+			if (!text.includes("\n") && !text.includes("\r")) {
+				return;
+			}
+
+			const parts = text
+				.split(/\r?\n+/)
+				.map((part) => part.trim())
+				.filter(Boolean);
+
+			if (parts.length < 2) {
+				return;
+			}
+
+			const wrapper = document.createElement("div");
+			wrapper.className = "paragraph-split";
+
+			parts.forEach((part) => {
+				const node = document.createElement("p");
+				node.textContent = part;
+				wrapper.appendChild(node);
+			});
+
+			paragraph.replaceWith(wrapper);
+		});
+	}
+
 	function setupCopyButtons() {
 		document
 			.querySelectorAll(".article-content pre")
@@ -220,6 +258,7 @@ const minutes = readingTime(post.body ?? "");
 
 	setupCopyButtons();
 	setupTocSpy();
+	splitArticleParagraphs();
 </script>
 
 <style>
@@ -426,6 +465,14 @@ const minutes = readingTime(post.body ?? "");
 	}
 
 	.article-content :global(p) {
+		margin: 24px 0;
+	}
+
+	.article-content :global(.paragraph-split) {
+		margin: 0;
+	}
+
+	.article-content :global(.paragraph-split p) {
 		margin: 24px 0;
 	}
 

@@ -2,7 +2,7 @@
 import { getCollection } from "astro:content";
 
 const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
-
+			const ADMIN_PASSWORD = "20031016";
 // 文章管理列表（构建时生成，每次部署后自动更新）
 const postsIndex = (await getCollection("posts"))
 	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
@@ -88,8 +88,31 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 				<div class="header-right">
 					<span class="write-label">WRITE</span>
 					<span id="saveStatus">● 草稿未保存</span>
+					<button id="logoutAdmin" type="button" class="logout-admin-button" hidden>
+						退出后台
+					</button>
 				</div>
 			</header>
+
+			<div class="admin-auth" id="adminAuth" aria-live="polite">
+				<div class="admin-auth-card">
+					<p class="admin-auth-kicker">后台管理</p>
+					<h2>写作系统登录</h2>
+					<label class="admin-auth-field">
+						<span>密码</span>
+						<input
+							id="adminPassword"
+							type="password"
+							placeholder="请输入密码"
+							autocomplete="current-password"
+						/>
+					</label>
+					<button id="adminLogin" type="button" class="admin-login-button">
+						进入后台
+					</button>
+					<p id="adminAuthMessage" class="admin-auth-message"></p>
+				</div>
+			</div>
 
 			<section class="editor">
 				<div class="intro">
@@ -503,6 +526,21 @@ $$"
 			const clearDraft =
 				document.querySelector("#clearDraft");
 
+			const adminAuth =
+				document.querySelector("#adminAuth");
+
+			const adminPassword =
+				document.querySelector("#adminPassword");
+
+			const adminLogin =
+				document.querySelector("#adminLogin");
+
+			const logoutAdmin =
+				document.querySelector("#logoutAdmin");
+
+			const adminAuthMessage =
+				document.querySelector("#adminAuthMessage");
+
 			const editBanner =
 				document.querySelector("#editBanner");
 
@@ -549,6 +587,48 @@ $$"
 
 			let saveTimer = null;
 
+
+			function normalizeParagraphMarkdown(text) {
+				const lines = String(text ?? "")
+					.replace(/\r\n/g, "\n")
+					.split("\n");
+
+				const blocks = [];
+				let currentParagraph = [];
+
+				for (const line of lines) {
+					const trimmed = line.replace(/\u00a0/g, " ").trim();
+
+					if (!trimmed) {
+						if (currentParagraph.length) {
+							blocks.push(currentParagraph.join(" "));
+							currentParagraph = [];
+						}
+						continue;
+					}
+
+					if (/^(?:#{1,6}\s|[-*]\s|\d+\.\s|>\s)/.test(trimmed)) {
+						if (currentParagraph.length) {
+							blocks.push(currentParagraph.join(" "));
+							currentParagraph = [];
+						}
+						blocks.push(trimmed);
+						continue;
+					}
+
+					// 每按一次回车，都当作一个新段落
+					blocks.push(trimmed);
+				}
+
+				if (currentParagraph.length) {
+					blocks.push(currentParagraph.join(" "));
+				}
+
+				return blocks
+					.filter(Boolean)
+					.map((block) => block.trim())
+					.join("\n\n");
+			}
 
 			function getContent() {
 				return content.innerText.replace(/\u00a0/g, " ");
@@ -1045,7 +1125,7 @@ $$"
 			function renderPreview() {
 				const html =
 					markdownToHtml(
-						getContent()
+						normalizeParagraphMarkdown(getContent())
 					);
 
 				preview.innerHTML = html;
@@ -1532,7 +1612,7 @@ $$"
 								tagList,
 
 							content:
-								getContent(),
+								normalizeParagraphMarkdown(getContent()),
 						};
 
 						if (isEditing) {
@@ -1605,6 +1685,64 @@ $$"
 			// ========================================
 			// 文章管理：编辑 / 删除
 			// ========================================
+
+			const editorSection = document.querySelector(".editor");
+
+			function setAdminAccess(isAllowed) {
+				if (isAllowed) {
+					adminAuth.hidden = true;
+					editorSection.hidden = false;
+					logoutAdmin.hidden = false;
+					return;
+				}
+
+				adminAuth.hidden = false;
+				editorSection.hidden = true;
+				logoutAdmin.hidden = true;
+				adminPassword.focus();
+			}
+
+			function unlockAdmin() {
+				const entered =
+					String(adminPassword.value || "").trim();
+
+				if (entered !== ADMIN_PASSWORD) {
+					adminAuthMessage.textContent = "密码不正确。";
+					adminPassword.focus();
+					return;
+				}
+
+				localStorage.setItem(
+					"tsy-blog-admin-token",
+					ADMIN_PASSWORD
+				);
+
+				adminAuthMessage.textContent = "";
+				adminPassword.value = "";
+				setAdminAccess(true);
+			}
+
+			function lockAdmin() {
+				localStorage.removeItem("tsy-blog-admin-token");
+				adminAuthMessage.textContent = "";
+				adminPassword.value = "";
+				setAdminAccess(false);
+			}
+
+			if (!localStorage.getItem("tsy-blog-admin-token")) {
+				setAdminAccess(false);
+			} else {
+				setAdminAccess(true);
+			}
+
+			adminLogin.addEventListener("click", unlockAdmin);
+			logoutAdmin.addEventListener("click", lockAdmin);
+
+			adminPassword.addEventListener("keydown", (event) => {
+				if (event.key === "Enter") {
+					unlockAdmin();
+				}
+			});
 
 			manageList.addEventListener(
 				"click",
@@ -1704,6 +1842,105 @@ $$"
 
 
 <style>
+	.admin-auth {
+		position: fixed;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+		background: rgba(17, 17, 17, 0.38);
+		backdrop-filter: blur(7px);
+		z-index: 30;
+	}
+
+	.admin-auth[hidden] {
+		display: none;
+	}
+
+	.admin-auth-card {
+		width: min(420px, 100%);
+		padding: 28px 24px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 18px;
+		background: rgba(255, 255, 255, 0.97);
+		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+	}
+
+	.admin-auth-kicker {
+		margin: 0 0 8px;
+		color: #8f8f8a;
+		font-size: 11px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.admin-auth-card h2 {
+		margin: 0 0 18px;
+		font-size: 28px;
+		line-height: 1.2;
+	}
+
+	.admin-auth-field {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-bottom: 14px;
+		color: #373737;
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.admin-auth-field input {
+		h: 48px;
+		padding: 0 14px;
+		border: 1px solid #d9d9d4;
+		border-radius: 10px;
+		background: #fff;
+		color: #111;
+		font-size: 15px;
+	}
+
+	.admin-login-button,
+	.logout-admin-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: fit-content;
+		height: 40px;
+		padding: 0 14px;
+		border: 1px solid #d9d9d4;
+		border-radius: 999px;
+		background: #fff;
+		color: #171717;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s ease, border-color 0.2s ease;
+	}
+
+	.admin-login-button {
+		width: 100%;
+		height: 48px;
+		border: 0;
+		border-radius: 10px;
+		background: #121212;
+		color: #fff;
+		font-size: 15px;
+	}
+
+	.logout-admin-button:hover,
+	.admin-login-button:hover {
+		background: #f5f5f3;
+		border-color: #cfcfc8;
+	}
+
+	.admin-auth-message {
+		min-height: 22px;
+		margin: 12px 0 0;
+		color: #b13b3b;
+		font-size: 13px;
+	}
 	/* ========================================
 	   数学背景装饰
 	======================================== */
