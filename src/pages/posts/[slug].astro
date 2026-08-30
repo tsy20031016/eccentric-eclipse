@@ -1,51 +1,341 @@
 ---
 import { getCollection, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { readingTime } from "../../utils/reading-time";
+import "katex/dist/katex.min.css";
 
 export async function getStaticPaths() {
-	const posts = await getCollection("posts");
+	const posts = (await getCollection("posts")).sort(
+		(a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+	);
 
-	return posts.map((post) => ({
+	return posts.map((post, i) => ({
 		params: {
 			slug: post.id,
 		},
 		props: {
 			post,
+			newer: posts[i - 1] ?? null,
+			older: posts[i + 1] ?? null,
 		},
 	}));
 }
 
-const { post } = Astro.props;
-const { Content } = await render(post);
+const { post, newer, older } = Astro.props;
+const { Content, headings } = await render(post);
+
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const toc = headings.filter(
+	(heading) => heading.depth === 2 || heading.depth === 3,
+);
+const tags = post.data.tags ?? [];
+const minutes = readingTime(post.body ?? "");
 ---
 
 <BaseLayout title={`${post.data.title} · TSY`}>
-	<article class="article">
-		<header class="article-header">
-			<p class="category">{post.data.category}</p>
+	<div class="page">
+		<article class="article">
+			<header class="article-header">
+				<p class="category">{post.data.category}</p>
 
-			<h1>{post.data.title}</h1>
+				<h1>{post.data.title}</h1>
 
-			<time datetime={post.data.date.toISOString()}>
-				{post.data.date.toLocaleDateString("zh-CN")}
-			</time>
+				<p class="meta-line">
+					<time datetime={post.data.date.toISOString()}>
+						{post.data.date.toLocaleDateString("zh-CN")}
+					</time>
 
-			<p class="description">
-				{post.data.description}
-			</p>
-		</header>
+					<span class="meta-divider">·</span>
 
-		<div class="article-content">
-			<Content />
-		</div>
-	</article>
+					<span>约 {minutes} 分钟</span>
+				</p>
+
+				<p class="description">
+					{post.data.description}
+				</p>
+
+				{tags.length > 0 && (
+					<p class="tags">
+						{tags.map((tag) => (
+							<a
+								class="tag"
+								href={`${base}posts/?tag=${encodeURIComponent(tag)}`}
+							>
+								#{tag}
+							</a>
+						))}
+					</p>
+				)}
+			</header>
+
+			{toc.length >= 2 && (
+				<details class="toc-mobile">
+					<summary>目录</summary>
+
+					<nav class="toc-list">
+						{toc.map((heading) => (
+							<a
+								class={`depth-${heading.depth}`}
+								href={`#${heading.slug}`}
+							>
+								{heading.text}
+							</a>
+						))}
+					</nav>
+				</details>
+			)}
+
+			<div class="article-content">
+				<Content />
+			</div>
+
+			<nav class="post-nav">
+				{older ? (
+					<a
+						class="nav-card prev"
+						href={`${base}posts/${older.id}/`}
+					>
+						<span class="nav-label">← 上一篇</span>
+
+						<span class="nav-title">{older.data.title}</span>
+					</a>
+				) : (
+					<span class="nav-card placeholder" />
+				)}
+
+				{newer ? (
+					<a
+						class="nav-card next"
+						href={`${base}posts/${newer.id}/`}
+					>
+						<span class="nav-label">下一篇 →</span>
+
+						<span class="nav-title">{newer.data.title}</span>
+					</a>
+				) : (
+					<span class="nav-card placeholder" />
+				)}
+			</nav>
+		</article>
+
+		{toc.length >= 2 && (
+			<aside class="toc-rail">
+				<p class="toc-heading">目录</p>
+
+				<nav class="toc-list">
+					{toc.map((heading) => (
+						<a
+							class={`depth-${heading.depth}`}
+							href={`#${heading.slug}`}
+						>
+							{heading.text}
+						</a>
+					))}
+				</nav>
+			</aside>
+		)}
+	</div>
 </BaseLayout>
 
+<script>
+	function setupCopyButtons() {
+		document
+			.querySelectorAll(".article-content pre")
+			.forEach((pre) => {
+				const button = document.createElement("button");
+
+				button.type = "button";
+				button.className = "copy-button";
+				button.textContent = "复制";
+
+				button.addEventListener("click", async () => {
+					const code = pre.querySelector("code");
+
+					try {
+						await navigator.clipboard.writeText(
+							(code?.innerText ?? "").replace(/\n$/, ""),
+						);
+
+						button.textContent = "已复制 ✓";
+					} catch {
+						button.textContent = "复制失败";
+					}
+
+					setTimeout(() => {
+						button.textContent = "复制";
+					}, 1600);
+				});
+
+				pre.appendChild(button);
+			});
+	}
+
+	function setupTocSpy() {
+		const links = [
+			...document.querySelectorAll(
+				".toc-rail .toc-list a",
+			),
+		];
+
+		if (links.length === 0) {
+			return;
+		}
+
+		const linkById = new Map(
+			links.map((link) => [
+				decodeURIComponent(
+					(link.getAttribute("href") ?? "").slice(1),
+				),
+				link,
+			]),
+		);
+
+		const headings = [
+			...document.querySelectorAll(
+				".article-content h2[id], .article-content h3[id]",
+			),
+		];
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) {
+						continue;
+					}
+
+					links.forEach((link) =>
+						link.classList.remove("active"),
+					);
+
+					linkById
+						.get(entry.target.id)
+						?.classList.add("active");
+				}
+			},
+			{ rootMargin: "-70px 0px -70% 0px" },
+		);
+
+		headings.forEach((heading) => observer.observe(heading));
+	}
+
+	setupCopyButtons();
+	setupTocSpy();
+</script>
+
 <style>
+	.page {
+		max-width: 1060px;
+		margin: 0 auto;
+		padding: 0 24px;
+		display: grid;
+		grid-template-columns: minmax(0, 760px);
+		justify-content: center;
+	}
+
+	/* ======== 桌面端目录侧栏 ======== */
+
+	.toc-rail {
+		display: none;
+	}
+
+	@media (min-width: 1240px) {
+		.page {
+			grid-template-columns: minmax(0, 760px) 230px;
+			gap: 70px;
+		}
+
+		.toc-rail {
+			display: block;
+			position: sticky;
+			top: 90px;
+			align-self: start;
+			max-height: calc(100vh - 130px);
+			overflow-y: auto;
+			padding: 100px 0 40px;
+		}
+
+		.toc-mobile {
+			display: none;
+		}
+	}
+
+	.toc-heading {
+		margin: 0 0 14px;
+		color: #999;
+		font-family: monospace;
+		font-size: 10px;
+		letter-spacing: 0.16em;
+	}
+
+	.toc-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		border-left: 1px solid #e5e5e5;
+	}
+
+	.toc-list a {
+		display: block;
+		padding: 5px 0 5px 16px;
+		color: #888;
+		font-size: 12.5px;
+		line-height: 1.55;
+		text-decoration: none;
+		border-left: 1px solid transparent;
+		margin-left: -1px;
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.toc-list a.depth-3 {
+		padding-left: 30px;
+	}
+
+	.toc-list a:hover {
+		color: #202020;
+	}
+
+	.toc-list a.active {
+		color: #202020;
+		border-left-color: #202020;
+	}
+
+	/* ======== 移动端折叠目录 ======== */
+
+	.toc-mobile {
+		margin: 34px 0 0;
+		border: 1px solid #e5e5e5;
+		border-radius: 8px;
+		background: #fff;
+	}
+
+	.toc-mobile summary {
+		padding: 13px 18px;
+		color: #666;
+		font-size: 13.5px;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.toc-mobile .toc-list {
+		padding: 4px 18px 14px;
+		border-left: 0;
+	}
+
+	.toc-mobile .toc-list a {
+		padding-left: 12px;
+	}
+
+	.toc-mobile .toc-list a.depth-3 {
+		padding-left: 26px;
+	}
+
+	/* ======== 文章 ======== */
+
 	.article {
 		max-width: 760px;
-		margin: 0 auto;
-		padding: 100px 24px 120px;
+		padding: 100px 0 120px;
 	}
 
 	.article-header {
@@ -69,12 +359,18 @@ const { Content } = await render(post);
 		line-height: 1.2;
 	}
 
-	.article-header time {
-		display: block;
-		margin-top: 20px;
+	.meta-line {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 20px 0 0;
 		color: #aaa;
 		font-family: monospace;
 		font-size: 12px;
+	}
+
+	.meta-divider {
+		color: #ddd;
 	}
 
 	.description {
@@ -83,6 +379,27 @@ const { Content } = await render(post);
 		font-size: 17px;
 		line-height: 1.8;
 	}
+
+	.tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin: 22px 0 0;
+	}
+
+	.tag {
+		color: #999;
+		font-family: monospace;
+		font-size: 12px;
+		text-decoration: none;
+		transition: color 0.15s ease;
+	}
+
+	.tag:hover {
+		color: #202020;
+	}
+
+	/* ======== 正文 ======== */
 
 	.article-content {
 		padding-top: 60px;
@@ -119,26 +436,160 @@ const { Content } = await render(post);
 		color: #777;
 	}
 
-	.article-content :global(code) {
+	.article-content :global(img) {
+		display: block;
+		max-width: 100%;
+		height: auto;
+		margin: 32px auto;
+		border-radius: 8px;
+	}
+
+	/* 行内代码 */
+	.article-content :global(:not(pre) > code) {
 		padding: 2px 6px;
 		background: #f0f0f0;
+		border-radius: 4px;
+		font-family: monospace;
+		font-size: 0.88em;
+	}
+
+	/* 代码块（Shiki 高亮） */
+	.article-content :global(pre) {
+		position: relative;
+		margin: 32px 0;
+		padding: 20px 22px;
+		overflow-x: auto;
+		border: 1px solid #e8e8e8;
+		border-radius: 10px;
+		background: #f8f8f8 !important;
+		font-size: 13.5px;
+		line-height: 1.75;
+	}
+
+	.article-content :global(pre code) {
+		display: block;
+		padding: 0;
+		background: transparent;
 		font-family: monospace;
 	}
 
-	.article-content :global(pre) {
+	/* 复制按钮由脚本动态创建，必须用 :global() 才能命中 */
+	.article-content :global(.copy-button) {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		padding: 4px 10px;
+		border: 1px solid #ddd;
+		border-radius: 6px;
+		background: #fff;
+		color: #888;
+		font-size: 11px;
+		opacity: 0;
+		cursor: pointer;
+		transition:
+			opacity 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.article-content :global(pre:hover .copy-button),
+	.article-content :global(.copy-button:focus-visible) {
+		opacity: 1;
+	}
+
+	@media (hover: none) {
+		.article-content :global(.copy-button) {
+			opacity: 1;
+		}
+	}
+
+	.article-content :global(.copy-button:hover) {
+		border-color: #999;
+		color: #202020;
+	}
+
+	/* KaTeX 公式横向滚动 */
+	.article-content :global(.katex-display) {
+		margin: 36px 0;
 		overflow-x: auto;
-		padding: 20px;
-		background: #f4f4f4;
+		overflow-y: hidden;
+		padding: 4px 0;
+	}
+
+	/* ======== 上一篇 / 下一篇 ======== */
+
+	.post-nav {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin-top: 80px;
+		padding-top: 40px;
+		border-top: 1px solid #e5e5e5;
+	}
+
+	.nav-card {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 22px;
+		border: 1px solid #e0e0e0;
+		border-radius: 10px;
+		text-decoration: none;
+		transition:
+			border-color 0.2s ease,
+			background 0.2s ease,
+			transform 0.2s ease;
+	}
+
+	.nav-card:hover {
+		border-color: #bbb;
+		background: #f7f7f7;
+		transform: translateY(-2px);
+	}
+
+	.nav-card.next {
+		text-align: right;
+	}
+
+	.nav-card.placeholder {
+		visibility: hidden;
+	}
+
+	.nav-label {
+		color: #999;
+		font-family: monospace;
+		font-size: 11px;
+		letter-spacing: 0.08em;
+	}
+
+	.nav-title {
+		color: #202020;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 16.5px;
+		line-height: 1.45;
 	}
 
 	@media (max-width: 600px) {
+		.page {
+			padding: 0 20px;
+		}
+
 		.article {
-			padding: 70px 20px 80px;
+			padding: 70px 0 80px;
 		}
 
 		.article-content {
 			padding-top: 45px;
 			font-size: 16px;
+		}
+
+		.post-nav {
+			grid-template-columns: 1fr;
+			margin-top: 60px;
+		}
+
+		.nav-card.next {
+			text-align: left;
 		}
 	}
 </style>

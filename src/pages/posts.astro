@@ -1,10 +1,48 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
+import { readingTime } from "../utils/reading-time";
 
-const posts = await getCollection("posts");
+const posts = (await getCollection("posts")).sort(
+	(a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
 
-console.log(posts);
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+
+// 供客户端搜索 / 筛选使用的索引
+const index = posts.map((post) => ({
+	id: post.id,
+	url: `${base}posts/${post.id}/`,
+	title: post.data.title,
+	description: post.data.description,
+	category: post.data.category,
+	tags: post.data.tags ?? [],
+	date: post.data.date.toLocaleDateString("zh-CN"),
+	readingTime: readingTime(post.body ?? ""),
+	text: (post.body ?? "").toLowerCase(),
+}));
+
+// 分类与标签汇总（按数量排序）
+const categoryCounts = new Map<string, number>();
+for (const post of posts) {
+	categoryCounts.set(
+		post.data.category,
+		(categoryCounts.get(post.data.category) ?? 0) + 1,
+	);
+}
+const categories = [...categoryCounts.entries()]
+	.sort((a, b) => b[1] - a[1])
+	.map(([name]) => name);
+
+const tagCounts = new Map<string, number>();
+for (const post of posts) {
+	for (const tag of post.data.tags ?? []) {
+		tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+	}
+}
+const tags = [...tagCounts.entries()]
+	.sort((a, b) => b[1] - a[1])
+	.map(([name, count]) => ({ name, count }));
 ---
 
 <BaseLayout title="文章 · TSY">
@@ -19,37 +57,253 @@ console.log(posts);
 	</header>
 
 	<main class="post-container">
-	<div class="post-count">
-		<span>ALL POSTS</span>
-		<span>{posts.length} 篇文章</span>
-	</div>
+		<div class="toolbar">
+			<div class="search-box">
+				<span class="search-icon">⌕</span>
 
-	<div class="post-list">
-		{posts.map((post) => (
-			<article class="post">
-				<div class="post-meta">
-					<time datetime={post.data.date.toISOString()}>
-						{post.data.date.toLocaleDateString("zh-CN")}
-					</time>
+				<input
+					id="searchInput"
+					type="search"
+					placeholder="搜索文章…"
+					autocomplete="off"
+				/>
+			</div>
 
-					<span>{post.data.category}</span>
+			<div class="filter-row" id="categoryRow">
+				<button type="button" class="chip active" data-category="">
+					全部
+				</button>
+
+				{categories.map((category) => (
+					<button
+						type="button"
+						class="chip"
+						data-category={category}
+					>
+						{category}
+					</button>
+				))}
+			</div>
+
+			{tags.length > 0 && (
+				<div class="filter-row tag-row" id="tagRow">
+					{tags.map(({ name, count }) => (
+						<button
+							type="button"
+							class="chip tag-chip"
+							data-tag={name}
+						>
+							#{name}
+							<span class="chip-count">{count}</span>
+						</button>
+					))}
 				</div>
+			)}
+		</div>
 
-				<div class="post-content">
-					<h2>{post.data.title}</h2>
+		<div class="post-count">
+			<span>ALL POSTS</span>
+			<span id="resultCount">
+				{posts.length} 篇文章
+			</span>
+		</div>
 
-					<p>{post.data.description}</p>
+		<div class="post-list" id="postList">
+			{posts.map((post) => (
+				<article
+					class="post"
+					data-id={post.id}
+				>
+					<div class="post-meta">
+						<time datetime={post.data.date.toISOString()}>
+							{post.data.date.toLocaleDateString("zh-CN")}
+						</time>
 
-					<a href={`/eccentric-eclipse/posts/${post.id}/`}>
-						阅读文章
-						<span>→</span>
-					</a>
-				</div>
-			</article>
-		))}
-	</div>
-</main>
+						<span>{post.data.category}</span>
+
+						<span>约 {readingTime(post.body ?? "")} 分钟</span>
+					</div>
+
+					<div class="post-content">
+						<h2>{post.data.title}</h2>
+
+						<p>{post.data.description}</p>
+
+						{(post.data.tags ?? []).length > 0 && (
+							<div class="post-tags">
+								{(post.data.tags ?? []).map((tag) => (
+									<button
+										type="button"
+										class="tag-link"
+										data-tag={tag}
+									>
+										#{tag}
+									</button>
+								))}
+							</div>
+						)}
+
+						<a href={`${base}posts/${post.id}/`}>
+							阅读文章
+							<span>→</span>
+						</a>
+					</div>
+				</article>
+			))}
+		</div>
+
+		<div class="empty" id="emptyState" hidden>
+			<p>没有找到符合条件的文章。</p>
+			<button type="button" id="clearFilters">
+				清除筛选条件
+			</button>
+		</div>
+	</main>
 </BaseLayout>
+
+<script define:vars={{ index }}>
+	const searchInput = document.querySelector("#searchInput");
+	const categoryRow = document.querySelector("#categoryRow");
+	const tagRow = document.querySelector("#tagRow");
+	const postList = document.querySelector("#postList");
+	const resultCount = document.querySelector("#resultCount");
+	const emptyState = document.querySelector("#emptyState");
+	const clearFilters = document.querySelector("#clearFilters");
+
+	const state = { q: "", category: "", tag: null };
+
+	// 支持通过 URL 参数直接进入筛选状态：?q= / ?cat= / ?tag=
+	const params = new URLSearchParams(location.search);
+	state.q = params.get("q") || "";
+	state.category = params.get("cat") || "";
+	state.tag = params.get("tag") || null;
+
+	if (state.q) {
+		searchInput.value = state.q;
+	}
+
+	function applyFilters() {
+		const q = state.q.trim().toLowerCase();
+		let visible = 0;
+
+		for (const post of index) {
+			const item = postList.querySelector(
+				`.post[data-id="${CSS.escape(post.id)}"]`,
+			);
+
+			if (!item) {
+				continue;
+			}
+
+			let match = true;
+
+			if (state.category && post.category !== state.category) {
+				match = false;
+			}
+
+			if (match && state.tag && !post.tags.includes(state.tag)) {
+				match = false;
+			}
+
+			if (match && q) {
+				const inTitle = post.title.toLowerCase().includes(q);
+				const inDescription = post.description
+					.toLowerCase()
+					.includes(q);
+				const inTags = post.tags.some((tag) =>
+					tag.toLowerCase().includes(q),
+				);
+				const inBody = post.text.includes(q);
+
+				match = inTitle || inDescription || inTags || inBody;
+			}
+
+			item.hidden = !match;
+
+			if (match) {
+				visible += 1;
+			}
+		}
+
+		resultCount.textContent =
+			visible === index.length
+				? `${index.length} 篇文章`
+				: `${visible} / ${index.length} 篇文章`;
+
+		emptyState.hidden = visible !== 0;
+
+		// 同步分类 chip 的选中态
+		categoryRow.querySelectorAll(".chip").forEach((chip) => {
+			chip.classList.toggle(
+				"active",
+				chip.dataset.category === state.category,
+			);
+		});
+
+		// 同步标签 chip 的选中态
+		if (tagRow) {
+			tagRow.querySelectorAll(".tag-chip").forEach((chip) => {
+				chip.classList.toggle(
+					"active",
+					chip.dataset.tag === state.tag,
+				);
+			});
+		}
+	}
+
+	searchInput.addEventListener("input", () => {
+		state.q = searchInput.value;
+		applyFilters();
+	});
+
+	categoryRow.addEventListener("click", (event) => {
+		const chip = event.target.closest(".chip[data-category]");
+
+		if (!chip) {
+			return;
+		}
+
+		state.category = chip.dataset.category;
+		applyFilters();
+	});
+
+	if (tagRow) {
+		tagRow.addEventListener("click", (event) => {
+			const chip = event.target.closest(".tag-chip");
+
+			if (!chip) {
+				return;
+			}
+
+			const tag = chip.dataset.tag;
+			state.tag = state.tag === tag ? null : tag;
+			applyFilters();
+		});
+	}
+
+	// 文章卡片里的标签点击后同样触发筛选
+	postList.addEventListener("click", (event) => {
+		const tagLink = event.target.closest(".tag-link");
+
+		if (!tagLink) {
+			return;
+		}
+
+		state.tag = tagLink.dataset.tag;
+		applyFilters();
+		postList.scrollIntoView({ behavior: "smooth", block: "start" });
+	});
+
+	clearFilters.addEventListener("click", () => {
+		state.q = "";
+		state.category = "";
+		state.tag = null;
+		searchInput.value = "";
+		applyFilters();
+	});
+
+	applyFilters();
+</script>
 
 <style>
 	.page-header {
@@ -89,6 +343,99 @@ console.log(posts);
 		padding: 0 24px 120px;
 	}
 
+	/* ======== 搜索与筛选 ======== */
+
+	.toolbar {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 34px 0 6px;
+	}
+
+	.search-box {
+		position: relative;
+		max-width: 420px;
+	}
+
+	.search-icon {
+		position: absolute;
+		left: 15px;
+		top: 50%;
+		transform: translateY(-52%);
+		color: #aaa;
+		font-size: 17px;
+		pointer-events: none;
+	}
+
+	.search-box input {
+		width: 100%;
+		height: 46px;
+		padding: 0 16px 0 42px;
+		border: 1px solid #dedede;
+		border-radius: 8px;
+		background: #fff;
+		color: #202020;
+		font: inherit;
+		font-size: 14px;
+		outline: none;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+
+	.search-box input:focus {
+		border-color: #aaa;
+		box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.035);
+	}
+
+	.filter-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 7px 13px;
+		border: 1px solid #ddd;
+		border-radius: 999px;
+		background: #fff;
+		color: #666;
+		font: inherit;
+		font-size: 12.5px;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.chip:hover {
+		border-color: #999;
+		color: #202020;
+	}
+
+	.chip.active {
+		background: #202020;
+		border-color: #202020;
+		color: #fff;
+	}
+
+	.chip-count {
+		opacity: 0.55;
+		font-family: monospace;
+		font-size: 10px;
+	}
+
+	.tag-chip {
+		font-family: monospace;
+		font-size: 11.5px;
+	}
+
+	/* ======== 文章列表 ======== */
+
 	.post-count {
 		display: flex;
 		justify-content: space-between;
@@ -105,6 +452,10 @@ console.log(posts);
 		gap: 40px;
 		padding: 36px 0;
 		border-top: 1px solid #e5e5e5;
+	}
+
+	.post[hidden] {
+		display: none;
 	}
 
 	.post-meta {
@@ -135,7 +486,29 @@ console.log(posts);
 		line-height: 1.8;
 	}
 
-	.post-content a {
+	.post-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-bottom: 18px;
+	}
+
+	.tag-link {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: #999;
+		font-family: monospace;
+		font-size: 12px;
+		cursor: pointer;
+		transition: color 0.15s ease;
+	}
+
+	.tag-link:hover {
+		color: #202020;
+	}
+
+	.post-content > a {
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
@@ -144,12 +517,43 @@ console.log(posts);
 		text-decoration: none;
 	}
 
-	.post-content a span {
+	.post-content > a span {
 		transition: transform 0.2s ease;
 	}
 
-	.post-content a:hover span {
+	.post-content > a:hover span {
 		transform: translateX(4px);
+	}
+
+	/* ======== 空状态 ======== */
+
+	.empty {
+		padding: 70px 0 40px;
+		text-align: center;
+	}
+
+	.empty p {
+		margin: 0 0 18px;
+		color: #999;
+	}
+
+	.empty button {
+		padding: 9px 18px;
+		border: 1px solid #ccc;
+		border-radius: 6px;
+		background: #fff;
+		color: #444;
+		font: inherit;
+		font-size: 13px;
+		cursor: pointer;
+		transition:
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.empty button:hover {
+		border-color: #202020;
+		color: #202020;
 	}
 
 	@media (max-width: 600px) {
@@ -169,6 +573,7 @@ console.log(posts);
 
 		.post-meta {
 			flex-direction: row;
+			flex-wrap: wrap;
 			gap: 16px;
 		}
 	}

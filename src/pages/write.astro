@@ -1,5 +1,35 @@
 ---
+import { getCollection } from "astro:content";
+
 const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
+
+// 文章管理列表（构建时生成，每次部署后自动更新）
+const postsIndex = (await getCollection("posts"))
+	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+	.map((post) => ({
+		filename: `${post.id}.md`,
+		title: post.data.title,
+		category: post.data.category,
+		date: post.data.date.toLocaleDateString("zh-CN"),
+		url: `/eccentric-eclipse/posts/${post.id}/`,
+	}));
+
+// 构建时内联所有文章原文，编辑模式用它回填表单
+const rawFiles = import.meta.glob("../content/posts/*.md", {
+	query: "?raw",
+	import: "default",
+	eager: true,
+});
+
+const rawContents = {};
+
+for (const [path, raw] of Object.entries(rawFiles)) {
+	const filename = path.split("/").pop();
+
+	if (filename) {
+		rawContents[filename] = raw;
+	}
+}
 ---
 
 <html lang="zh-CN">
@@ -7,34 +37,97 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 		<meta charset="utf-8" />
 		<meta
 			name="viewport"
-			content="width=device-width, initial-scale=1, viewport-fit=cover"
+			content="width=device-width, initial-scale=1"
 		/>
 		<meta
 			name="description"
 			content="TSY Blog 写作后台"
 		/>
 		<title>Write · TSY</title>
+
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
+		/>
+
+		<script
+			defer
+			src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
+		></script>
+
+		<script
+			defer
+			src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
+		></script>
 	</head>
 
 	<body>
+		<div class="math-background" aria-hidden="true">
+			<span class="math-symbol m1">∫</span>
+			<span class="math-symbol m2">∑</span>
+			<span class="math-symbol m3">∂</span>
+			<span class="math-symbol m4">∞</span>
+			<span class="math-symbol m5">π</span>
+			<span class="math-symbol m6">∇</span>
+			<span class="math-symbol m7">f(x)</span>
+			<span class="math-symbol m8">lim</span>
+			<span class="math-symbol m9">x → ∞</span>
+			<span class="math-symbol m10">eˣ</span>
+			<span class="math-symbol m11">Δx</span>
+			<span class="math-symbol m12">∈</span>
+			<span class="math-symbol m13">∀x</span>
+			<span class="math-symbol m14">dy/dx</span>
+			<span class="math-symbol m15">ℝ</span>
+			<span class="math-symbol m16">√x</span>
+		</div>
+
 		<main>
 			<header>
 				<a href="/eccentric-eclipse/">TSY</a>
 
 				<div class="header-right">
-					<span>WRITE</span>
+					<span class="write-label">WRITE</span>
 					<span id="saveStatus">● 草稿未保存</span>
 				</div>
 			</header>
 
 			<section class="editor">
-				<p class="eyebrow">A PLACE TO KEEP IDEAS</p>
+				<div class="intro">
+					<p class="eyebrow">A PLACE TO KEEP IDEAS</p>
 
-				<h1>写点什么。</h1>
+					<h1>写点什么。</h1>
+
+					<p class="intro-text">
+						把脑子里的东西写下来。
+					</p>
+				</div>
+
+				<!-- ================================
+				     编辑模式提示条
+				================================ -->
+
+				<div class="edit-banner" id="editBanner" hidden>
+					<span class="edit-banner-text">
+						正在编辑：<strong id="editBannerTitle"></strong>
+					</span>
+
+					<button
+						type="button"
+						id="exitEdit"
+						class="exit-edit-button"
+					>
+						退出编辑
+					</button>
+				</div>
 
 				<div class="form">
-					<label>
+					<!-- ================================
+					     标题
+					================================ -->
+
+					<label class="field">
 						<span>标题</span>
+
 						<input
 							id="title"
 							type="text"
@@ -43,8 +136,13 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 						/>
 					</label>
 
-					<label>
+					<!-- ================================
+					     描述
+					================================ -->
+
+					<label class="field">
 						<span>描述</span>
+
 						<input
 							id="description"
 							type="text"
@@ -53,20 +151,38 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 						/>
 					</label>
 
+					<!-- ================================
+					     分类 / 日期
+					================================ -->
+
 					<div class="two-columns">
-						<label>
+						<label class="field">
 							<span>分类</span>
 
 							<select id="category">
-								<option value="随笔">随笔</option>
-								<option value="数学">数学</option>
-								<option value="AI">AI</option>
-								<option value="技术">技术</option>
-								<option value="生活">生活</option>
+								<option value="随笔">
+									随笔
+								</option>
+
+								<option value="数学">
+									数学
+								</option>
+
+								<option value="AI">
+									AI
+								</option>
+
+								<option value="技术">
+									技术
+								</option>
+
+								<option value="生活">
+									生活
+								</option>
 							</select>
 						</label>
 
-						<label>
+						<label class="field">
 							<span>发布日期</span>
 
 							<input
@@ -76,7 +192,11 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 						</label>
 					</div>
 
-					<label>
+					<!-- ================================
+					     标签
+					================================ -->
+
+					<label class="field">
 						<span>标签</span>
 
 						<input
@@ -91,8 +211,17 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 						</small>
 					</label>
 
+					<!-- ================================
+					     正文标题
+					================================ -->
+
 					<div class="content-header">
-						<span>正文</span>
+						<div>
+							<span>正文</span>
+							<small class="markdown-hint">
+								Markdown
+							</small>
+						</div>
 
 						<div class="editor-tabs">
 							<button
@@ -113,17 +242,27 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 						</div>
 					</div>
 
+					<!-- ================================
+					     编辑区域
+					================================ -->
+
 					<div
 						class="editor-wrapper"
 						id="dropZone"
 					>
-						<textarea
+						<div
 							id="content"
-							placeholder={`在这里写下你的想法……
+							class="content-editor"
+							contenteditable="true"
+							role="textbox"
+							aria-multiline="true"
+							data-placeholder="在这里写下你的想法……
 
 支持 Markdown，例如：
 
-# 标题
+# 一级标题
+
+## 二级标题
 
 这是正文。
 
@@ -132,13 +271,19 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 *斜体*
 
 - 列表
+- 列表
+
+> 引用
+
+![图片](图片地址)
 
 $$
 f(x)=x^2
 $$
 
-你也可以直接把图片拖进这里。`}
-						></textarea>
+你也可以直接把图片拖进这里。"
+							spellcheck="false"
+						></div>
 
 						<div
 							id="preview"
@@ -151,7 +296,11 @@ $$
 							class="drop-overlay"
 							hidden
 						>
-							<div>
+							<div class="drop-content">
+								<div class="drop-icon">
+									↑
+								</div>
+
 								<strong>
 									松开鼠标上传图片
 								</strong>
@@ -163,12 +312,17 @@ $$
 						</div>
 					</div>
 
+					<!-- ================================
+					     编辑工具
+					================================ -->
+
 					<div class="tools">
 						<label
 							for="imageInput"
-							class="upload-button"
+							class="tool-button"
 						>
-							📷 上传图片
+							<span>＋</span>
+							上传图片
 						</label>
 
 						<input
@@ -181,16 +335,28 @@ $$
 						<button
 							type="button"
 							id="clearDraft"
-							class="secondary-button"
+							class="tool-button"
 						>
 							清空草稿
 						</button>
+
+						<span class="tool-hint">
+							支持 JPG · PNG · GIF · WebP
+						</span>
 					</div>
+
+					<!-- ================================
+					     图片上传状态
+					================================ -->
 
 					<div
 						id="uploadStatus"
 						class="upload-status"
 					></div>
+
+					<!-- ================================
+					     发布
+					================================ -->
 
 					<div class="bottom-actions">
 						<button
@@ -198,16 +364,96 @@ $$
 							id="publish"
 							class="publish-button"
 						>
-							发布文章
+							<span>发布文章</span>
+							<span class="publish-arrow">→</span>
 						</button>
 
 						<p id="message"></p>
 					</div>
 				</div>
+
+				<!-- ================================
+				     文章管理
+				================================ -->
+
+				<section class="manage-section">
+					<div class="manage-header">
+						<span class="manage-title">已有文章</span>
+
+						<span class="manage-count" id="manageCount">
+							{postsIndex.length} 篇
+						</span>
+					</div>
+
+					<div class="manage-list" id="manageList">
+						{
+							postsIndex.map((post) => (
+								<div
+									class="manage-row"
+									data-filename={post.filename}
+								>
+									<div class="manage-info">
+										<strong>{post.title}</strong>
+
+										<span>
+											{post.date} · {post.category}
+										</span>
+									</div>
+
+									<div class="manage-actions">
+										<a
+											href={post.url}
+											target="_blank"
+											rel="noopener"
+										>
+											查看
+										</a>
+
+										<button
+											type="button"
+											class="manage-edit"
+											data-filename={post.filename}
+										>
+											编辑
+										</button>
+
+										<button
+											type="button"
+											class="manage-delete"
+											data-filename={post.filename}
+										>
+											删除
+										</button>
+									</div>
+								</div>
+							))
+						}
+					</div>
+				</section>
+
+				<!-- ================================
+				     独立预览区域
+				================================ -->
+
+				<section
+					class="preview-section"
+					id="previewSection"
+					hidden
+				>
+					<div class="preview-heading">
+						<span>文章预览</span>
+						<span>PREVIEW</span>
+					</div>
+
+					<div
+						id="fullPreview"
+						class="full-preview"
+					></div>
+				</section>
 			</section>
 		</main>
 
-		<script define:vars={{ apiUrl }}>
+		<script define:vars={{ apiUrl, postsIndex, rawContents }}>
 			const title =
 				document.querySelector("#title");
 
@@ -238,6 +484,12 @@ $$
 			const preview =
 				document.querySelector("#preview");
 
+			const fullPreview =
+				document.querySelector("#fullPreview");
+
+			const previewSection =
+				document.querySelector("#previewSection");
+
 			const editTab =
 				document.querySelector("#editTab");
 
@@ -259,28 +511,62 @@ $$
 			const clearDraft =
 				document.querySelector("#clearDraft");
 
-			// ================================
-			// 日期默认值
-			// ================================
+			const editBanner =
+				document.querySelector("#editBanner");
 
-			function today() {
-				return new Date()
-					.toISOString()
-					.slice(0, 10);
-			}
+			const editBannerTitle =
+				document.querySelector("#editBannerTitle");
+
+			const exitEdit =
+				document.querySelector("#exitEdit");
+
+			const manageList =
+				document.querySelector("#manageList");
+
+			const manageCount =
+				document.querySelector("#manageCount");
+
+
+			// ========================================
+			// 编辑模式状态
+			// ========================================
+
+			// 为 null 时是"新建文章"模式；
+			// 为文件名（如 test-1787935999476.md）时是"编辑已有文章"模式。
+			let editingFilename = null;
+
+
+			// ========================================
+			// 日期默认值
+			// ========================================
 
 			if (!date.value) {
-				date.value = today();
+				date.value =
+					new Date()
+						.toISOString()
+						.slice(0, 10);
 			}
 
-			// ================================
+
+			// ========================================
 			// 草稿系统
-			// ================================
+			// ========================================
 
 			const DRAFT_KEY =
 				"tsy-blog-draft-v4";
 
 			let saveTimer = null;
+
+
+			function getContent() {
+				return content.innerText.replace(/\u00a0/g, " ");
+			}
+
+
+			function setContent(value) {
+				content.innerText = value || "";
+			}
+
 
 			function getDraft() {
 				return {
@@ -289,40 +575,40 @@ $$
 					category: category.value,
 					date: date.value,
 					tags: tags.value,
-					content: content.value,
+					content: getContent(),
 				};
 			}
 
+
 			function saveDraft() {
-				try {
-					const draft = getDraft();
-
-					localStorage.setItem(
-						DRAFT_KEY,
-						JSON.stringify(draft)
-					);
-
-					saveStatus.textContent =
-						"● 草稿已保存";
-				} catch (error) {
-					console.error(
-						"保存草稿失败",
-						error
-					);
+				// 编辑已有文章时不写草稿，避免覆盖"新建文章"的草稿
+				if (editingFilename) {
+					return;
 				}
+
+				const draft = getDraft();
+
+				localStorage.setItem(
+					DRAFT_KEY,
+					JSON.stringify(draft)
+				);
+
+				saveStatus.textContent =
+					"● 草稿已保存";
 			}
 
+
 			function loadDraft() {
+				const raw =
+					localStorage.getItem(
+						DRAFT_KEY
+					);
+
+				if (!raw) {
+					return;
+				}
+
 				try {
-					const raw =
-						localStorage.getItem(
-							DRAFT_KEY
-						);
-
-					if (!raw) {
-						return;
-					}
-
 					const draft =
 						JSON.parse(raw);
 
@@ -336,16 +622,19 @@ $$
 						draft.category || "随笔";
 
 					date.value =
-						draft.date || today();
+						draft.date ||
+						new Date()
+							.toISOString()
+							.slice(0, 10);
 
 					tags.value =
 						draft.tags || "";
 
-					content.value =
-						draft.content || "";
+					setContent(draft.content || "");
 
 					saveStatus.textContent =
 						"● 已恢复草稿";
+
 				} catch (error) {
 					console.error(
 						"读取草稿失败",
@@ -354,7 +643,12 @@ $$
 				}
 			}
 
+
 			function scheduleSave() {
+				if (editingFilename) {
+					return;
+				}
+
 				saveStatus.textContent =
 					"● 正在保存…";
 
@@ -366,6 +660,7 @@ $$
 						500
 					);
 			}
+
 
 			[
 				title,
@@ -386,104 +681,463 @@ $$
 				);
 			});
 
+
 			loadDraft();
 
-			// ================================
-			// Markdown 简单预览
-			// ================================
+
+			// ========================================
+			// 编辑 / 删除已有文章
+			// ========================================
+
+			// 解析 Markdown 原文里的 frontmatter（简单场景够用）
+			function parseRawPost(raw) {
+				const match = raw.match(
+					/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/
+				);
+
+				if (!match) {
+					return { fields: {}, body: raw };
+				}
+
+				const yaml = match[1];
+
+				const body = raw.slice(match[0].length);
+
+				const fields = {};
+
+				const lines = yaml.split(/\r?\n/);
+
+				for (let i = 0; i < lines.length; i++) {
+					const lineMatch =
+						lines[i].match(/^([\w-]+):\s*(.*)$/);
+
+					if (!lineMatch) {
+						continue;
+					}
+
+					const key = lineMatch[1];
+
+					let value = lineMatch[2].trim();
+
+					if (value === "") {
+						// 可能是块列表：tags:\n  - "a"\n  - "b"
+						const items = [];
+
+						let j = i + 1;
+
+						while (
+							j < lines.length &&
+							/^\s+-\s?/.test(lines[j])
+						) {
+							items.push(
+								lines[j]
+									.replace(/^\s+-\s?/, "")
+									.trim()
+									.replace(/^["']|["']$/g, "")
+							);
+
+							j++;
+						}
+
+						if (items.length) {
+							fields[key] = items;
+
+							i = j - 1;
+						} else {
+							fields[key] = "";
+						}
+
+						continue;
+					}
+
+					if (
+						(value.startsWith('"') && value.endsWith('"')) ||
+						(value.startsWith("'") && value.endsWith("'"))
+					) {
+						value = value.slice(1, -1);
+					}
+
+					// 行内数组：tags: ["a", "b"]
+					if (
+						value.startsWith("[") &&
+						value.endsWith("]")
+					) {
+						value = value
+							.slice(1, -1)
+							.split(",")
+							.map((item) =>
+								item
+									.trim()
+									.replace(/^["']|["']$/g, "")
+							)
+							.filter(Boolean);
+					}
+
+					fields[key] = value;
+				}
+
+				return { fields, body };
+			}
+
+
+			function normalizeDate(value) {
+				const text = String(value || "");
+
+				if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+					return text.slice(0, 10);
+				}
+
+				const parsed = new Date(text);
+
+				if (!Number.isNaN(parsed.valueOf())) {
+					return parsed.toISOString().slice(0, 10);
+				}
+
+				return new Date()
+					.toISOString()
+					.slice(0, 10);
+			}
+
+
+			function updatePublishButton() {
+				button.innerHTML = editingFilename
+					? '<span>更新文章</span><span class="publish-arrow">↻</span>'
+					: '<span>发布文章</span><span class="publish-arrow">→</span>';
+			}
+
+
+			function enterEditMode(filename) {
+				const raw = rawContents[filename];
+
+				if (!raw) {
+					message.textContent =
+						"找不到这篇文章的内容，可能是刚发布还没重新部署，稍后再试。";
+
+					return;
+				}
+
+				const post = postsIndex.find(
+					(item) => item.filename === filename
+				);
+
+				const { fields, body } =
+					parseRawPost(raw);
+
+				editingFilename = filename;
+
+				title.value = fields.title || "";
+
+				description.value =
+					fields.description || "";
+
+				category.value =
+					fields.category || "随笔";
+
+				date.value = normalizeDate(fields.date);
+
+				tags.value = Array.isArray(fields.tags)
+					? fields.tags.join(", ")
+					: fields.tags || "";
+
+				setContent(body);
+
+				editBanner.hidden = false;
+
+				editBannerTitle.textContent =
+					(fields.title || filename);
+
+				message.textContent = "";
+
+				updatePublishButton();
+
+				saveStatus.textContent =
+					"● 编辑模式";
+
+				window.scrollTo({
+					top: 0,
+					behavior: "smooth",
+				});
+			}
+
+
+			function exitEditMode() {
+				editingFilename = null;
+
+				editBanner.hidden = true;
+
+				updatePublishButton();
+
+				saveStatus.textContent =
+					"● 草稿未保存";
+			}
+
+
+			exitEdit.addEventListener(
+				"click",
+				() => {
+					exitEditMode();
+				}
+			);
+
+
+			// 支持通过 ?edit=文件名 直接进入编辑模式
+			{
+				const editTarget =
+					new URLSearchParams(
+						location.search
+					).get("edit");
+
+				if (editTarget) {
+					enterEditMode(editTarget);
+				}
+			}
+
+
+			// 强制正文编辑器使用纯黑文字。
+			// 某些手机浏览器/系统主题可能会自行降低 textarea 的文字对比度，
+			// 所以这里再设置一次 inline style，确保实际输入内容清晰可见。
+			function forceEditorTextBlack() {
+				content.style.setProperty(
+					"color",
+					"#000000",
+					"important"
+				);
+				content.style.setProperty(
+					"-webkit-text-fill-color",
+					"#000000",
+					"important"
+				);
+				content.style.setProperty(
+					"opacity",
+					"1",
+					"important"
+				);
+				content.style.setProperty(
+					"caret-color",
+					"#000000",
+					"important"
+				);
+				content.style.setProperty(
+					"font-weight",
+					"500",
+					"important"
+				);
+				content.style.setProperty(
+					"-webkit-font-smoothing",
+					"auto",
+					"important"
+				);
+				content.style.setProperty(
+					"text-shadow",
+					"0 0 0 #000000",
+					"important"
+				);
+			}
+
+			forceEditorTextBlack();
+			content.addEventListener(
+				"focus",
+				forceEditorTextBlack
+			);
+
+
+			// ========================================
+			// Markdown 预览
+			// ========================================
 
 			function escapeHtml(text) {
 				return text
-					.replaceAll("&", "&amp;")
-					.replaceAll("<", "&lt;")
-					.replaceAll(">", "&gt;");
+					.replaceAll(
+						"&",
+						"&amp;"
+					)
+					.replaceAll(
+						"<",
+						"&lt;"
+					)
+					.replaceAll(
+						">",
+						"&gt;"
+					);
 			}
+
 
 			function markdownToHtml(markdown) {
 				let html =
 					escapeHtml(markdown);
 
-				html = html.replace(
-					/^### (.*)$/gm,
-					"<h3>$1</h3>"
-				);
+				// 图片
+				html =
+					html.replace(
+						/!\[(.*?)\]\((.*?)\)/g,
+						'<img src="$2" alt="$1" loading="lazy" />'
+					);
 
-				html = html.replace(
-					/^## (.*)$/gm,
-					"<h2>$1</h2>"
-				);
+				// 链接
+				html =
+					html.replace(
+						/\[(.*?)\]\((.*?)\)/g,
+						'<a href="$2" target="_blank" rel="noopener">$1</a>'
+					);
 
-				html = html.replace(
-					/^# (.*)$/gm,
-					"<h1>$1</h1>"
-				);
-
-				html = html.replace(
-					/\*\*(.*?)\*\*/g,
-					"<strong>$1</strong>"
-				);
-
-				html = html.replace(
-					/\*(.*?)\*/g,
-					"<em>$1</em>"
-				);
-
-				html = html.replace(
-					/!\[(.*?)\]\((.*?)\)/g,
-					'<img src="$2" alt="$1" />'
-				);
-
-				html = html.replace(
-					/\[(.*?)\]\((.*?)\)/g,
-					'<a href="$2">$1</a>'
-				);
-
-				html = html.replace(
-					/^> (.*)$/gm,
-					"<blockquote>$1</blockquote>"
-				);
-
-				html = html.replace(
-					/^- (.*)$/gm,
-					"<li>$1</li>"
-				);
-
-				html = html.replace(
-					/(<li>.*<\/li>)/gs,
-					"<ul>$1</ul>"
-				);
-
-				html = html.replace(
-					/\n\n/g,
-					"</p><p>"
-				);
+				// 标题
+				html =
+					html.replace(
+						/^### (.*)$/gm,
+						"<h3>$1</h3>"
+					);
 
 				html =
-					"<p>" +
-					html +
-					"</p>";
+					html.replace(
+						/^## (.*)$/gm,
+						"<h2>$1</h2>"
+					);
 
-				html = html.replace(
-					/<p>(<h[1-3]>)/g,
-					"$1"
-				);
+				html =
+					html.replace(
+						/^# (.*)$/gm,
+						"<h1>$1</h1>"
+					);
 
-				html = html.replace(
-					/(<\/h[1-3]>)<\/p>/g,
-					"$1"
-				);
+				// 粗体
+				html =
+					html.replace(
+						/\*\*(.*?)\*\*/g,
+						"<strong>$1</strong>"
+					);
+
+				// 斜体
+				html =
+					html.replace(
+						/(?<!\*)\*(?!\*)(.*?)\*(?!\*)/g,
+						"<em>$1</em>"
+					);
+
+				// 引用
+				html =
+					html.replace(
+						/^> (.*)$/gm,
+						"<blockquote>$1</blockquote>"
+					);
+
+				// 列表
+				html =
+					html.replace(
+						/^- (.*)$/gm,
+						"<li>$1</li>"
+					);
+
+				html =
+					html.replace(
+						/(<li>.*?<\/li>)/gs,
+						"<ul>$1</ul>"
+					);
+
+				// 段落
+				html =
+					html.replace(
+						/\n\n/g,
+						"</p><p>"
+					);
+
+				html =
+					"<p>" + html + "</p>";
+
+				// 清理标题外面的 p
+				html =
+					html.replace(
+						/<p>(<h[1-3]>)/g,
+						"$1"
+					);
+
+				html =
+					html.replace(
+						/(<\/h[1-3]>)<\/p>/g,
+						"$1"
+					);
+
+				// 清理图片外面的 p
+				html =
+					html.replace(
+						/<p>(<img)/g,
+						"$1"
+					);
+
+				html =
+					html.replace(
+						/(\/>)<\/p>/g,
+						"$1"
+					);
 
 				return html;
 			}
 
-			function showPreview() {
-				preview.innerHTML =
+
+			function renderPreview() {
+				const html =
 					markdownToHtml(
-						content.value
+						getContent()
 					);
 
-				content.hidden = true;
-				preview.hidden = false;
+				preview.innerHTML = html;
+
+				fullPreview.innerHTML =
+					html;
+
+				// 预览里渲染数学公式（KaTeX auto-render，脚本未加载完成时静默跳过）
+				if (window.renderMathInElement) {
+					const delimiters = [
+						{
+							left: "$$",
+							right: "$$",
+							display: true,
+						},
+						{
+							left: "$",
+							right: "$",
+							display: false,
+						},
+						{
+							left: "\\(",
+							right: "\\)",
+							display: false,
+						},
+						{
+							left: "\\[",
+							right: "\\]",
+							display: true,
+						},
+					];
+
+					const options = {
+						delimiters,
+						throwOnError: false,
+					};
+
+					window.renderMathInElement(
+						preview,
+						options
+					);
+
+					window.renderMathInElement(
+						fullPreview,
+						options
+					);
+				}
+			}
+
+
+			function showPreview() {
+				renderPreview();
+
+				// 编辑区保持显示，预览放在正文下方
+				content.hidden = false;
+
+				// 保留编辑器内部的备用预览，但不占用布局
+				preview.hidden = true;
+
+				// 显示下面的大预览
+				previewSection.hidden = false;
 
 				editTab.classList.remove(
 					"active"
@@ -492,11 +1146,23 @@ $$
 				previewTab.classList.add(
 					"active"
 				);
+
+				// 滚动到下面的预览
+				setTimeout(() => {
+					previewSection.scrollIntoView({
+						behavior: "smooth",
+						block: "start",
+					});
+				}, 50);
 			}
+
 
 			function showEditor() {
 				content.hidden = false;
+
 				preview.hidden = true;
+
+				previewSection.hidden = true;
 
 				previewTab.classList.remove(
 					"active"
@@ -506,6 +1172,7 @@ $$
 					"active"
 				);
 			}
+
 
 			editTab.addEventListener(
 				"click",
@@ -517,186 +1184,14 @@ $$
 				showPreview
 			);
 
-			// ================================
-			// 图片压缩
-			// ================================
 
-			async function compressImage(file) {
-				const maxWidth = 1920;
-				const maxHeight = 1920;
-				const quality = 0.82;
-
-				if (
-					file.type === "image/gif" ||
-					file.type === "image/svg+xml"
-				) {
-					return file;
-				}
-
-				if (
-					file.size < 1024 * 1024
-				) {
-					return file;
-				}
-
-				return new Promise(
-					(resolve, reject) => {
-						const img =
-							new Image();
-
-						const objectUrl =
-							URL.createObjectURL(
-								file
-							);
-
-						img.onload = () => {
-							URL.revokeObjectURL(
-								objectUrl
-							);
-
-							let width =
-								img.naturalWidth;
-
-							let height =
-								img.naturalHeight;
-
-							const scale =
-								Math.min(
-									1,
-									maxWidth /
-										width,
-									maxHeight /
-										height
-								);
-
-							width =
-								Math.round(
-									width *
-										scale
-								);
-
-							height =
-								Math.round(
-									height *
-										scale
-								);
-
-							const canvas =
-								document.createElement(
-									"canvas"
-								);
-
-							canvas.width =
-								width;
-
-							canvas.height =
-								height;
-
-							const ctx =
-								canvas.getContext(
-									"2d"
-								);
-
-							if (!ctx) {
-								resolve(file);
-								return;
-							}
-
-							ctx.drawImage(
-								img,
-								0,
-								0,
-								width,
-								height
-							);
-
-							canvas.toBlob(
-								(blob) => {
-									if (!blob) {
-										resolve(file);
-										return;
-									}
-
-									const compressed =
-										new File(
-											[blob],
-											file.name.replace(
-												/\.[^.]+$/,
-												".jpg"
-											),
-											{
-												type:
-													"image/jpeg",
-												lastModified:
-													Date.now(),
-											}
-										);
-
-									resolve(
-										compressed
-									);
-								},
-								"image/jpeg",
-								quality
-							);
-						};
-
-						img.onerror = () => {
-							URL.revokeObjectURL(
-								objectUrl
-							);
-
-							resolve(file);
-						};
-
-						img.src =
-							objectUrl;
-					}
-				);
-			}
-
-			// ================================
-			// 带超时的 fetch
-			// ================================
-
-			async function fetchWithTimeout(
-				url,
-				options = {},
-				timeout = 30000
-			) {
-				const controller =
-					new AbortController();
-
-				const timer =
-					setTimeout(
-						() =>
-							controller.abort(),
-						timeout
-					);
-
-				try {
-					return await fetch(
-						url,
-						{
-							...options,
-							signal:
-								controller.signal,
-						}
-					);
-				} finally {
-					clearTimeout(timer);
-				}
-			}
-
-			// ================================
+			// ========================================
 			// 图片上传
-			// ================================
-
-			let uploadingImages = 0;
+			// ========================================
 
 			async function uploadImage(file) {
 				if (!file) {
-					return false;
+					return;
 				}
 
 				if (
@@ -707,71 +1202,40 @@ $$
 					uploadStatus.textContent =
 						"请选择图片文件。";
 
-					return false;
+					return;
 				}
-
-				const originalSize =
-					file.size;
 
 				if (
-					originalSize >
-					20 * 1024 * 1024
+					file.size >
+					10 * 1024 * 1024
 				) {
 					uploadStatus.textContent =
-						"原图片不能超过 20MB。";
+						"图片不能超过 10MB。";
 
-					return false;
+					return;
 				}
 
-				uploadingImages++;
+				uploadStatus.textContent =
+					`正在上传 ${file.name}…`;
 
 				try {
-					uploadStatus.textContent =
-						"正在准备图片…";
-
-					const uploadFile =
-						await compressImage(
-							file
-						);
-
-					const sizeText =
-						(
-							uploadFile.size /
-							1024 /
-							1024
-						).toFixed(1);
-
-					uploadStatus.textContent =
-						`正在上传图片（${sizeText}MB）…`;
-
 					const response =
-						await fetchWithTimeout(
-							apiUrl +
-								"upload",
+						await fetch(
+							apiUrl + "upload",
 							{
-								method:
-									"POST",
+								method: "POST",
+
 								headers: {
 									"Content-Type":
-										uploadFile.type ||
-										"image/jpeg",
+										file.type,
 								},
-								body:
-									uploadFile,
-							},
-							30000
+
+								body: file,
+							}
 						);
 
-					let result;
-
-					try {
-						result =
-							await response.json();
-					} catch {
-						throw new Error(
-							"服务器返回了无效响应。"
-						);
-					}
+					const result =
+						await response.json();
 
 					if (
 						!response.ok ||
@@ -779,8 +1243,7 @@ $$
 					) {
 						throw new Error(
 							result.message ||
-								result.error ||
-								"图片上传失败"
+							"图片上传失败"
 						);
 					}
 
@@ -796,106 +1259,61 @@ $$
 
 					saveDraft();
 
-					return true;
 				} catch (error) {
-					console.error(
-						"图片上传失败",
-						error
-					);
+					console.error(error);
 
-					if (
-						error?.name ===
-						"AbortError"
-					) {
-						uploadStatus.textContent =
-							"图片上传超时，请检查手机网络后重试。";
-					} else {
-						uploadStatus.textContent =
-							"图片上传失败：" +
-							(error?.message ||
-								"未知错误");
-					}
-
-					return false;
-				} finally {
-					uploadingImages--;
-
-					if (
-						uploadingImages === 0
-					) {
-						imageInput.value =
-							"";
-					}
+					uploadStatus.textContent =
+						"图片上传失败：" +
+						error.message;
 				}
 			}
 
+
 			function insertAtCursor(text) {
-				const start =
-					content.selectionStart;
-
-				const end =
-					content.selectionEnd;
-
-				const before =
-					content.value.slice(
-						0,
-						start
-					);
-
-				const after =
-					content.value.slice(
-						end
-					);
-
-				content.value =
-					before +
-					text +
-					after;
-
-				const newPosition =
-					start + text.length;
-
-				content.selectionStart =
-					newPosition;
-
-				content.selectionEnd =
-					newPosition;
-
 				content.focus();
+
+				const selection = window.getSelection();
+				if (!selection || selection.rangeCount === 0) {
+					content.appendChild(document.createTextNode(text));
+					scheduleSave();
+					return;
+				}
+
+				const range = selection.getRangeAt(0);
+				if (!content.contains(range.commonAncestorContainer)) {
+					content.appendChild(document.createTextNode(text));
+					scheduleSave();
+					return;
+				}
+
+				range.deleteContents();
+				const node = document.createTextNode(text);
+				range.insertNode(node);
+				range.setStartAfter(node);
+				range.collapse(true);
+			selection.removeAllRanges();
+			selection.addRange(range);
 
 				scheduleSave();
 			}
 
+
 			imageInput.addEventListener(
 				"change",
 				async () => {
-					const files =
-						Array.from(
-							imageInput.files ||
-								[]
-						);
+					const file =
+						imageInput.files?.[0];
 
-					const images =
-						files.filter(
-							(file) =>
-								file.type.startsWith(
-									"image/"
-								)
-						);
+					await uploadImage(file);
 
-					for (
-						const file of images
-					) {
-						await uploadImage(
-							file
-						);
-					}
+					imageInput.value = "";
 				}
 			);
 
-			// ================================
+
+			// ========================================
 			// 拖入图片
-			// ================================
+			// ========================================
 
 			dropZone.addEventListener(
 				"dragover",
@@ -906,6 +1324,7 @@ $$
 						false;
 				}
 			);
+
 
 			dropZone.addEventListener(
 				"dragleave",
@@ -921,6 +1340,7 @@ $$
 				}
 			);
 
+
 			dropZone.addEventListener(
 				"drop",
 				async (event) => {
@@ -931,8 +1351,7 @@ $$
 
 					const files =
 						Array.from(
-							event.dataTransfer
-								.files
+							event.dataTransfer.files
 						);
 
 					const images =
@@ -953,37 +1372,60 @@ $$
 				}
 			);
 
-			// ================================
+
+			// ========================================
 			// 清空草稿
-			// ================================
+			// ========================================
 
 			clearDraft.addEventListener(
 				"click",
 				() => {
+					const wasEditing =
+						Boolean(editingFilename);
+
 					const confirmed =
 						confirm(
-							"确定要清空当前草稿吗？"
+							wasEditing
+								? "退出编辑并清空表单吗？（不会改动已发布的文章）"
+								: "确定要清空当前草稿吗？"
 						);
 
 					if (!confirmed) {
 						return;
 					}
 
-					title.value = "";
-					description.value = "";
-					category.value = "随笔";
-					date.value = today();
-					tags.value = "";
-					content.value = "";
+					exitEditMode();
 
-					localStorage.removeItem(
-						DRAFT_KEY
-					);
+					title.value = "";
+
+					description.value =
+						"";
+
+					category.value =
+						"随笔";
+
+					date.value =
+						new Date()
+							.toISOString()
+							.slice(0, 10);
+
+					tags.value = "";
+
+					setContent("");
+
+					if (!wasEditing) {
+						localStorage.removeItem(
+							DRAFT_KEY
+						);
+					}
 
 					saveStatus.textContent =
-						"● 草稿已清空";
+						wasEditing
+							? "● 已退出编辑"
+							: "● 草稿已清空";
 
-					message.textContent = "";
+					message.textContent =
+						"";
 
 					uploadStatus.textContent =
 						"";
@@ -992,44 +1434,98 @@ $$
 				}
 			);
 
-			// ================================
-			// 发布文章
-			// ================================
+
+			// ========================================
+			// 发布 / 更新文章
+			// ========================================
+
+			// 统一的 JSON POST 请求，带友好的错误提示
+			async function postJson(url, body) {
+				let response;
+
+				try {
+					response = await fetch(url, {
+						method: "POST",
+
+						headers: {
+							"Content-Type":
+								"application/json",
+						},
+
+						body: JSON.stringify(body),
+					});
+				} catch (error) {
+					throw new Error(
+						"网络请求失败，请检查网络后重试"
+					);
+				}
+
+				let result;
+
+				try {
+					result = await response.json();
+				} catch (error) {
+					throw new Error(
+						"API 返回格式异常，请确认已部署仓库 worker/ 目录里的新版 Worker"
+					);
+				}
+
+				if (
+					result &&
+					result.message ===
+						"TSY Blog API is running."
+				) {
+					// 旧版 Worker 对未知路径返回这个提示
+					throw new Error(
+						"API 还不支持该操作，请先部署仓库 worker/ 目录里的新版 Worker"
+					);
+				}
+
+				if (!response.ok || !result.success) {
+					throw new Error(
+						result.message ||
+							`请求失败（HTTP ${response.status}）`
+					);
+				}
+
+				return result;
+			}
+
 
 			button.addEventListener(
 				"click",
 				async () => {
-					if (
-						uploadingImages > 0
-					) {
-						message.textContent =
-							"请等图片上传完成后再发布。";
-
-						return;
-					}
-
 					if (
 						!title.value.trim()
 					) {
 						message.textContent =
 							"请先填写标题。";
 
+						title.focus();
+
 						return;
 					}
 
 					if (
-						!content.value.trim()
+						!getContent().trim()
 					) {
 						message.textContent =
 							"正文还没有写呢。";
 
+						content.focus();
+
 						return;
 					}
 
+					const isEditing =
+						Boolean(editingFilename);
+
 					button.disabled = true;
 
-					button.textContent =
-						"正在发布……";
+					button.innerHTML =
+						isEditing
+							? "<span>正在更新……</span>"
+							: "<span>正在发布……</span>";
 
 					message.textContent =
 						"";
@@ -1044,105 +1540,186 @@ $$
 								)
 								.filter(Boolean);
 
-						const response =
-							await fetchWithTimeout(
-								apiUrl,
-								{
-									method:
-										"POST",
-									headers: {
-										"Content-Type":
-											"application/json",
-									},
-									body:
-										JSON.stringify(
-											{
-												title:
-													title.value,
+						const payload = {
+							title:
+								title.value,
 
-												description:
-													description.value,
+							description:
+								description.value,
 
-												category:
-													category.value,
+							category:
+								category.value,
 
-												date:
-													date.value,
+							date:
+								date.value,
 
-												tags:
-													tagList,
+							tags:
+								tagList,
 
-												content:
-													content.value,
-											}
-										),
-								},
-								30000
-							);
+							content:
+								getContent(),
+						};
 
-						let result;
-
-						try {
-							result =
-								await response.json();
-						} catch {
-							throw new Error(
-								"服务器返回了无效响应。"
-							);
+						if (isEditing) {
+							payload.filename =
+								editingFilename;
 						}
 
-						if (
-							!response.ok ||
-							!result.success
-						) {
-							throw new Error(
-								result.message ||
-									result.error ||
-									"发布失败"
-							);
-						}
-
-						message.textContent =
-							"✓ 发布成功！GitHub 正在自动部署。";
-
-						localStorage.removeItem(
-							DRAFT_KEY
+						await postJson(
+							isEditing
+								? apiUrl + "posts/update"
+								: apiUrl,
+							payload
 						);
 
-						saveStatus.textContent =
-							"● 草稿已清除";
-
-						title.value = "";
-						description.value = "";
-						tags.value = "";
-						content.value = "";
-
-						date.value = today();
-
-						showEditor();
-					} catch (error) {
-						console.error(
-							"发布失败",
-							error
-						);
-
-						if (
-							error?.name ===
-							"AbortError"
-						) {
+						if (isEditing) {
 							message.textContent =
-								"发布超时，请检查网络后重试。";
+								"✓ 文章已更新！GitHub 正在自动部署。";
+
+							exitEditMode();
 						} else {
 							message.textContent =
-								"发布失败：" +
-								(error?.message ||
-									"未知错误");
-						}
-					} finally {
-						button.disabled = false;
+								"✓ 发布成功！GitHub 正在自动部署。";
 
-						button.textContent =
-							"发布文章";
+							localStorage.removeItem(
+								DRAFT_KEY
+							);
+
+							saveStatus.textContent =
+								"● 草稿已清除";
+						}
+
+						title.value = "";
+
+						description.value =
+							"";
+
+						category.value =
+							"随笔";
+
+						tags.value = "";
+
+						setContent("");
+
+						date.value =
+							new Date()
+								.toISOString()
+								.slice(0, 10);
+
+						showEditor();
+
+					} catch (error) {
+						console.error(error);
+
+						message.textContent =
+							(isEditing
+								? "更新失败："
+								: "发布失败：") +
+							error.message;
+
+					} finally {
+						button.disabled =
+							false;
+
+						updatePublishButton();
+					}
+				}
+			);
+
+
+			// ========================================
+			// 文章管理：编辑 / 删除
+			// ========================================
+
+			manageList.addEventListener(
+				"click",
+				async (event) => {
+					const editButton =
+						event.target.closest(
+							".manage-edit"
+						);
+
+					if (editButton) {
+						enterEditMode(
+							editButton.dataset.filename
+						);
+
+						return;
+					}
+
+					const deleteButton =
+						event.target.closest(
+							".manage-delete"
+						);
+
+					if (!deleteButton) {
+						return;
+					}
+
+					const filename =
+						deleteButton.dataset.filename;
+
+					const post = postsIndex.find(
+						(item) =>
+							item.filename === filename
+					);
+
+					const confirmed = confirm(
+						`确定要删除《${
+							post ? post.title : filename
+						}》吗？删除后无法恢复。`
+					);
+
+					if (!confirmed) {
+						return;
+					}
+
+					deleteButton.disabled = true;
+
+					deleteButton.textContent =
+						"删除中…";
+
+					try {
+						await postJson(
+							apiUrl + "posts/delete",
+							{ filename }
+						);
+
+						const row =
+							manageList.querySelector(
+								`.manage-row[data-filename="${CSS.escape(filename)}"]`
+							);
+
+						if (row) {
+							row.remove();
+						}
+
+						if (editingFilename === filename) {
+							exitEditMode();
+						}
+
+						const remaining =
+							manageList.querySelectorAll(
+								".manage-row"
+							).length;
+
+						manageCount.textContent =
+							`${remaining} 篇`;
+
+						message.textContent =
+							"✓ 已删除，GitHub 正在自动部署。";
+
+					} catch (error) {
+						console.error(error);
+
+						message.textContent =
+							"删除失败：" +
+							error.message;
+
+						deleteButton.disabled = false;
+
+						deleteButton.textContent =
+							"删除";
 					}
 				}
 			);
@@ -1150,15 +1727,74 @@ $$
 	</body>
 </html>
 
+
 <style>
+	/* ========================================
+	   数学背景装饰
+	======================================== */
+	.math-background {
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		overflow: hidden;
+		pointer-events: none;
+		user-select: none;
+		contain: strict;
+	}
+
+	.math-symbol {
+		position: absolute;
+		top: var(--top);
+		left: var(--left);
+		z-index: 0;
+		color: #1a1a1a;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: clamp(30px, 4vw, 58px);
+		font-style: italic;
+		font-weight: 400;
+		line-height: 1;
+		white-space: nowrap;
+		transform: rotate(var(--rotate));
+		opacity: 0.045;
+}
+
+	.m1  { --top: 8%;  --left: 3%;  --rotate: -12deg; }
+	.m2  { --top: 15%; --left: 92%; --rotate: 9deg; }
+	.m3  { --top: 29%; --left: 1%;  --rotate: 15deg; }
+	.m4  { --top: 42%; --left: 96%; --rotate: -7deg; }
+	.m5  { --top: 58%; --left: 3%;  --rotate: 6deg; }
+	.m6  { --top: 73%; --left: 94%; --rotate: -14deg; }
+	.m7  { --top: 5%;  --left: 82%; --rotate: -5deg; font-size: clamp(20px, 2.5vw, 34px); }
+	.m8  { --top: 52%; --left: 98%; --rotate: 7deg; font-size: clamp(20px, 2.5vw, 34px); }
+	.m9  { --top: 88%; --left: 83%; --rotate: -6deg; font-size: clamp(18px, 2.2vw, 30px); }
+	.m10 { --top: 34%; --left: 89%; --rotate: 11deg; font-size: clamp(20px, 2.5vw, 34px); }
+	.m11 { --top: 66%; --left: 1%;  --rotate: -8deg; font-size: clamp(20px, 2.5vw, 34px); }
+	.m12 { --top: 82%; --left: 94%; --rotate: 13deg; font-size: clamp(24px, 3vw, 42px); }
+	.m13 { --top: 23%; --left: 78%; --rotate: -5deg; font-size: clamp(20px, 2.5vw, 34px); }
+	.m14 { --top: 92%; --left: 2%;  --rotate: 8deg; font-size: clamp(17px, 2vw, 28px); }
+	.m15 { --top: 14%; --left: 2%;  --rotate: 7deg; font-size: clamp(24px, 3vw, 42px); }
+	.m16 { --top: 47%; --left: 93%; --rotate: -11deg; font-size: clamp(20px, 2.5vw, 34px); }
+
+	/* ========================================
+	   基础
+	======================================== */
+
 	* {
 		box-sizing: border-box;
 	}
 
+	html {
+		scroll-behavior: smooth;
+	}
+
 	body {
+		position: relative;
 		margin: 0;
-		background: #fafafa;
-		color: #202020;
+		isolation: isolate;
+
+		background: #f8f8f6;
+
+		color: #181818;
 
 		font-family:
 			-apple-system,
@@ -1168,65 +1804,109 @@ $$
 			"Hiragino Sans GB",
 			"Microsoft YaHei",
 			sans-serif;
+
+		-webkit-font-smoothing: antialiased;
 	}
 
-	main {
-		max-width: 820px;
-		margin: 0 auto;
-		padding: 28px 24px 100px;
+	button,
+	input,
+	select,
+	textarea {
+		font: inherit;
 	}
+
+
+	/* ========================================
+	   页面
+	======================================== */
+
+	main {
+		position: relative;
+		z-index: 1;
+		width: min(900px, calc(100% - 40px));
+
+		margin: 0 auto;
+
+		padding:
+			30px
+			0
+			140px;
+	}
+
+
+	/* ========================================
+	   Header
+	======================================== */
 
 	header {
 		display: flex;
+
 		align-items: center;
+
 		justify-content: space-between;
 
-		padding-bottom: 70px;
+		padding-bottom: 90px;
 	}
 
 	header a {
-		color: #202020;
+		color: #181818;
 
 		font-size: 20px;
+
 		font-weight: 700;
 
 		letter-spacing: 0.08em;
+
 		text-decoration: none;
 	}
 
 	.header-right {
 		display: flex;
+
 		align-items: center;
-		gap: 20px;
+
+		gap: 22px;
 	}
 
-	header span {
+	.write-label {
 		color: #999;
 
 		font-size: 11px;
-		letter-spacing: 0.14em;
+
+		letter-spacing: 0.18em;
 	}
 
 	#saveStatus {
-		color: #888;
-		letter-spacing: 0;
+		color: #777;
+
+		font-size: 12px;
 	}
 
+
+	/* ========================================
+	   Intro
+	======================================== */
+
 	.editor {
-		max-width: 760px;
+		width: 100%;
+	}
+
+	.intro {
+		margin-bottom: 58px;
 	}
 
 	.eyebrow {
-		margin: 0 0 20px;
+		margin: 0 0 18px;
 
 		color: #999;
 
 		font-size: 11px;
-		letter-spacing: 0.16em;
+
+		letter-spacing: 0.17em;
 	}
 
 	h1 {
-		margin: 0 0 50px;
+		margin: 0;
 
 		font-family:
 			Georgia,
@@ -1234,32 +1914,56 @@ $$
 			serif;
 
 		font-size:
-			clamp(44px, 9vw, 72px);
+			clamp(48px, 8vw, 76px);
 
 		font-weight: 400;
-		letter-spacing: -0.04em;
+
+		letter-spacing: -0.055em;
+
+		line-height: 1;
 	}
+
+	.intro-text {
+		margin: 18px 0 0;
+
+		color: #999;
+
+		font-size: 14px;
+	}
+
+
+	/* ========================================
+	   表单
+	======================================== */
 
 	.form {
 		display: flex;
+
 		flex-direction: column;
-		gap: 26px;
+
+		gap: 28px;
 	}
 
-	label {
+	.field {
 		display: flex;
+
 		flex-direction: column;
+
 		gap: 10px;
 	}
 
-	label > span,
-	.content-header > span {
-		color: #777;
+	.field > span,
+	.content-header > div > span {
+		color: #666;
+
 		font-size: 13px;
+
+		font-weight: 500;
 	}
 
-	small {
+	.field small {
 		color: #aaa;
+
 		font-size: 12px;
 	}
 
@@ -1268,39 +1972,46 @@ $$
 	textarea {
 		width: 100%;
 
-		border: 1px solid #ddd;
-		border-radius: 5px;
+		border: 1px solid #dededb;
+
+		border-radius: 7px;
 
 		background: #fff;
 
-		padding: 14px 16px;
-
-		color: #111 !important;
--webkit-text-fill-color: #111 !important;
-
-		font: inherit;
+		color: #111;
 
 		outline: none;
 
 		transition:
-			border-color 0.2s,
-			box-shadow 0.2s;
+			border-color 0.2s ease,
+			box-shadow 0.2s ease,
+			background 0.2s ease;
+	}
+
+	input,
+	select {
+		height: 50px;
+
+		padding: 0 15px;
 	}
 
 	input::placeholder,
 	textarea::placeholder {
 		color: #aaa;
+
 		opacity: 1;
+
+		-webkit-text-fill-color: #aaa;
 	}
 
 	input:focus,
 	select:focus,
 	textarea:focus {
-		border-color: #999;
+		border-color: #aaa;
 
 		box-shadow:
-			0 0 0 3px
-			rgba(0, 0, 0, 0.04);
+			0 0 0 4px
+			rgba(0, 0, 0, 0.035);
 	}
 
 	.two-columns {
@@ -1312,140 +2023,240 @@ $$
 		gap: 18px;
 	}
 
+
+	/* ========================================
+	   正文标题栏
+	======================================== */
+
 	.content-header {
 		display: flex;
-		align-items: center;
+
+		align-items: flex-end;
+
 		justify-content: space-between;
 
-		margin-bottom: -16px;
+		margin-top: 8px;
 	}
+
+	.content-header > div:first-child {
+		display: flex;
+
+		align-items: baseline;
+
+		gap: 10px;
+	}
+
+	.markdown-hint {
+		color: #aaa;
+
+		font-size: 11px;
+
+		letter-spacing: 0.05em;
+	}
+
+
+	/* ========================================
+	   编辑 / 预览 Tab
+	======================================== */
 
 	.editor-tabs {
 		display: flex;
-		gap: 5px;
+
+		align-items: center;
+
+		gap: 3px;
+
+		padding: 3px;
+
+		border: 1px solid #e1e1de;
+
+		border-radius: 7px;
+
+		background: #f0f0ed;
 	}
 
 	.tab {
-		border: 1px solid transparent;
-		border-radius: 4px;
+		border: 0;
+
+		border-radius: 5px;
 
 		background: transparent;
-		color: #999;
 
-		padding: 6px 10px;
+		color: #888;
+
+		padding: 7px 13px;
 
 		font-size: 12px;
 
 		cursor: pointer;
+
+		transition:
+			background 0.2s ease,
+			color 0.2s ease;
 	}
 
 	.tab:hover {
-		background: #f0f0f0;
+		color: #333;
 	}
 
 	.tab.active {
-		background: #202020;
-		color: white;
+		background: #fff;
+
+		color: #111;
+
+		box-shadow:
+			0 1px 3px
+			rgba(0, 0, 0, 0.08);
 	}
+
+
+	/* ========================================
+	   正文编辑器
+	======================================== */
 
 	.editor-wrapper {
 		position: relative;
+
+		width: 100%;
 	}
 
 	textarea {
-	min-height: 440px;
-	resize: vertical;
-	line-height: 1.8;
+		display: block;
+		width: 100%;
+		min-height: 620px;
+		padding: 27px 30px;
+		resize: vertical;
+		border-radius: 9px;
+		border: 1px solid #dededb;
+		background: #ffffff;
+		color: #000000 !important;
+		-webkit-text-fill-color: #000000 !important;
+		text-fill-color: #000000 !important;
+		opacity: 1 !important;
+		caret-color: #000000 !important;
+		font-family:
+			-apple-system,
+			BlinkMacSystemFont,
+			"Segoe UI",
+			"PingFang SC",
+			"Hiragino Sans GB",
+			"Microsoft YaHei",
+			sans-serif;
+		font-size: 16px;
+		font-weight: 400;
+		line-height: 1.95;
+		letter-spacing: 0;
+		-webkit-appearance: none;
+		appearance: none;
+		box-shadow:
+			0 2px 8px rgba(0, 0, 0, 0.025);
+		text-shadow: 0 0 0 #000000;
+	}
 
-	/* 强制正文使用深黑色 */
-	color: #111111 !important;
-	-webkit-text-fill-color: #111111 !important;
+	textarea:focus {
+		border-color: #b8b8b4;
 
-	/* 防止 Safari 把文字变淡 */
-	opacity: 1 !important;
+		box-shadow:
+			0 0 0 4px
+			rgba(0, 0, 0, 0.035),
+			0 3px 12px
+			rgba(0, 0, 0, 0.035);
+	}
 
-	/* 光标也使用黑色 */
-	caret-color: #111111;
 
-	/* 防止 iOS 自动改变输入框外观 */
-	-webkit-appearance: none;
-	appearance: none;
-}
+	/* ========================================
+	   真正的正文编辑器
+	======================================== */
 
-/* 正文占位文字保持浅灰 */
-textarea::placeholder {
-	color: #999999 !important;
-	-webkit-text-fill-color: #999999 !important;
-	opacity: 1 !important;
-}
+	.content-editor {
+		position: relative;
+		display: block;
+		width: 100%;
+		min-height: 620px;
+		padding: 27px 30px;
+		resize: vertical;
+		overflow: auto;
+		border-radius: 9px;
+		border: 1px solid #dededb;
+		background: #ffffff;
+		color: #000000;
+		-webkit-text-fill-color: #000000;
+		caret-color: #000000;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+		font-size: 16px;
+		font-weight: 500;
+		line-height: 1.95;
+		letter-spacing: 0;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		-webkit-font-smoothing: auto;
+		text-shadow: 0 0 0 #000000;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
+		outline: none;
+	}
+
+	/* 编辑器内部任何由粘贴/输入产生的节点都强制使用纯黑文字 */
+	.content-editor,
+	.content-editor * {
+		color: #000000 !important;
+		-webkit-text-fill-color: #000000 !important;
+		text-shadow: 0 0 0 #000000 !important;
+		opacity: 1 !important;
+	}
+
+	.content-editor:empty::before {
+		content: attr(data-placeholder);
+		display: block;
+		white-space: pre-wrap;
+		color: #a9a9a9;
+		-webkit-text-fill-color: #a9a9a9;
+		text-shadow: none;
+		pointer-events: none;
+	}
+
+	.content-editor:focus {
+		border-color: #b8b8b4;
+		box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.035), 0 3px 12px rgba(0, 0, 0, 0.035);
+	}
+
+	.content-editor::selection {
+		background: rgba(0, 0, 0, 0.12);
+		color: #000000;
+	}
+
+
+	/* ========================================
+	   小预览
+	======================================== */
 
 	.preview {
-		min-height: 440px;
+		width: 100%;
 
-		overflow-wrap: anywhere;
+		min-height: 620px;
 
-		border: 1px solid #ddd;
-		border-radius: 5px;
+		padding: 34px 38px;
 
-		background: white;
+		border: 1px solid #dededb;
 
-		padding: 20px 22px;
+		border-radius: 9px;
+
+		background: #fff;
+
+		color: #181818;
 
 		line-height: 1.9;
 
-		color: #202020;
+		box-shadow:
+			0 2px 8px
+			rgba(0, 0, 0, 0.025);
+
+		overflow-wrap: anywhere;
 	}
 
-	.preview h1,
-	.preview h2,
-	.preview h3 {
-		margin-top: 1.5em;
-		margin-bottom: 0.6em;
 
-		font-family:
-			Georgia,
-			"Times New Roman",
-			serif;
-
-		letter-spacing: -0.02em;
-	}
-
-	.preview h1 {
-		font-size: 30px;
-	}
-
-	.preview h2 {
-		font-size: 25px;
-	}
-
-	.preview h3 {
-		font-size: 21px;
-	}
-
-	.preview img {
-		display: block;
-
-		max-width: 100%;
-		height: auto;
-
-		margin: 20px 0;
-
-		border-radius: 5px;
-	}
-
-	.preview blockquote {
-		margin: 20px 0;
-
-		border-left: 3px solid #ddd;
-
-		padding-left: 18px;
-
-		color: #777;
-	}
-
-	.preview a {
-		color: inherit;
-	}
+	/* ========================================
+	   拖入提示
+	======================================== */
 
 	.drop-overlay {
 		position: absolute;
@@ -1455,24 +2266,31 @@ textarea::placeholder {
 		z-index: 10;
 
 		display: flex;
+
 		align-items: center;
+
 		justify-content: center;
 
-		border: 2px dashed #999;
-		border-radius: 5px;
+		border:
+			2px dashed
+			#999;
 
-		background: rgba(
-			255,
-			255,
-			255,
-			0.94
-		);
+		border-radius: 9px;
+
+		background:
+			rgba(
+				255,
+				255,
+				255,
+				0.96
+			);
 
 		pointer-events: none;
 	}
 
-	.drop-overlay div {
+	.drop-content {
 		display: flex;
+
 		flex-direction: column;
 
 		align-items: center;
@@ -1480,154 +2298,775 @@ textarea::placeholder {
 		gap: 8px;
 	}
 
+	.drop-icon {
+		display: flex;
+
+		align-items: center;
+
+		justify-content: center;
+
+		width: 44px;
+
+		height: 44px;
+
+		border-radius: 50%;
+
+		background: #f1f1ee;
+
+		font-size: 22px;
+	}
+
 	.drop-overlay strong {
-		font-size: 17px;
+		font-size: 16px;
 	}
 
 	.drop-overlay span {
-		color: #888;
+		color: #999;
 
 		font-size: 13px;
 	}
 
+
+	/* ========================================
+	   预览排版
+	======================================== */
+
+	.preview h1,
+	.preview h2,
+	.preview h3,
+	.full-preview h1,
+	.full-preview h2,
+	.full-preview h3 {
+		font-family:
+			Georgia,
+			"Times New Roman",
+			serif;
+
+		font-weight: 400;
+
+		letter-spacing: -0.03em;
+	}
+
+	.preview h1,
+	.full-preview h1 {
+		margin:
+			0 0 26px;
+
+		font-size: 36px;
+
+		line-height: 1.2;
+	}
+
+	.preview h2,
+	.full-preview h2 {
+		margin:
+			42px 0 16px;
+
+		font-size: 28px;
+
+		line-height: 1.3;
+	}
+
+	.preview h3,
+	.full-preview h3 {
+		margin:
+			32px 0 12px;
+
+		font-size: 22px;
+
+		line-height: 1.4;
+	}
+
+	.preview p,
+	.full-preview p {
+		margin:
+			0 0 20px;
+	}
+
+	.preview strong,
+	.full-preview strong {
+		font-weight: 700;
+	}
+
+	.preview em,
+	.full-preview em {
+		font-style: italic;
+	}
+
+	.preview ul,
+	.full-preview ul {
+		margin:
+			0 0 22px;
+
+		padding-left: 25px;
+	}
+
+	.preview li,
+	.full-preview li {
+		margin-bottom: 7px;
+	}
+
+	.preview blockquote,
+	.full-preview blockquote {
+		margin:
+			25px 0;
+
+		padding:
+			8px 0
+			8px 20px;
+
+		border-left:
+			3px solid
+			#d5d5d2;
+
+		color: #666;
+	}
+
+	.preview a,
+	.full-preview a {
+		color: #222;
+
+		text-decoration:
+			underline;
+	}
+
+	.preview img,
+	.full-preview img {
+		display: block;
+
+		width: auto;
+		max-width: 100%;
+		max-height: 680px;
+		height: auto;
+
+		margin:
+			28px auto;
+
+		border-radius: 8px;
+
+		object-fit: contain;
+
+		box-shadow:
+			0 4px 20px
+			rgba(0, 0, 0, 0.08);
+	}
+
+
+	/* ========================================
+	   工具栏
+	======================================== */
+
 	.tools {
 		display: flex;
+
 		align-items: center;
+
+		flex-wrap: wrap;
 
 		gap: 10px;
 	}
 
-	.upload-button,
-	.secondary-button {
+	.tool-button {
 		display: inline-flex;
 
 		align-items: center;
+
 		justify-content: center;
 
-		border: 1px solid #ddd;
-		border-radius: 4px;
+		gap: 7px;
 
-		background: white;
+		height: 40px;
+
+		padding: 0 14px;
+
+		border:
+			1px solid
+			#dededb;
+
+		border-radius: 6px;
+
+		background: #fff;
+
 		color: #444;
-
-		padding: 11px 15px;
 
 		font-size: 13px;
 
 		cursor: pointer;
 
 		transition:
-			background 0.2s,
-			border-color 0.2s;
+			background 0.2s ease,
+			border-color 0.2s ease,
+			color 0.2s ease;
 	}
 
-	.upload-button:hover,
-	.secondary-button:hover {
-		background: #f5f5f5;
-		border-color: #bbb;
+	.tool-button:hover {
+		background: #f3f3f0;
+
+		border-color: #c8c8c4;
+
+		color: #111;
+	}
+
+	.tool-button span {
+		font-size: 17px;
+	}
+
+	.tool-hint {
+		margin-left: 3px;
+
+		color: #aaa;
+
+		font-size: 12px;
 	}
 
 	.upload-status {
 		min-height: 20px;
 
-		color: #888;
+		color: #777;
 
 		font-size: 13px;
-
-		line-height: 1.6;
 	}
+
+
+	/* ========================================
+	   发布按钮
+	======================================== */
 
 	.bottom-actions {
 		display: flex;
+
 		flex-direction: column;
 
 		gap: 12px;
+
+		margin-top: 4px;
 	}
 
 	.publish-button {
+		display: flex;
+
+		align-items: center;
+
+		justify-content: center;
+
+		gap: 12px;
+
 		width: 100%;
 
+		height: 58px;
+
 		border: 0;
-		border-radius: 5px;
 
-		background: #202020;
-		color: white;
+		border-radius: 8px;
 
-		padding: 16px 20px;
+		background: #181818;
 
-		font: inherit;
+		color: #fff;
+
+		font-size: 15px;
+
+		font-weight: 500;
 
 		cursor: pointer;
 
-		transition: opacity 0.2s;
+		transition:
+			transform 0.2s ease,
+			opacity 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.publish-button:hover {
-		opacity: 0.85;
+		transform: translateY(-1px);
+
+		box-shadow:
+			0 7px 20px
+			rgba(0, 0, 0, 0.12);
+	}
+
+	.publish-button:active {
+		transform: translateY(0);
 	}
 
 	.publish-button:disabled {
 		cursor: wait;
 
 		opacity: 0.5;
+
+		transform: none;
+
+		box-shadow: none;
+	}
+
+	.publish-arrow {
+		font-size: 18px;
+
+		transition:
+			transform 0.2s ease;
+	}
+
+	.publish-button:hover
+	.publish-arrow {
+		transform: translateX(4px);
 	}
 
 	#message {
-		margin: 0;
-
 		min-height: 24px;
 
-		color: #777;
+		margin: 0;
+
+		color: #666;
 
 		font-size: 14px;
 
-		line-height: 1.6;
+		text-align: center;
 	}
 
-	@media (max-width: 600px) {
+
+	/* ========================================
+	   独立文章预览
+	======================================== */
+
+	.preview-section {
+		width: min(
+			760px,
+			100%
+		);
+
+		margin:
+			100px auto
+			0;
+	}
+
+	.preview-heading {
+		position: relative;
+		display: flex;
+
+		align-items: center;
+		justify-content: center;
+
+		padding-bottom: 15px;
+
+		border-bottom:
+			1px solid
+			#dededb;
+
+		color: #555;
+
+		font-size: 13px;
+	}
+
+	.preview-heading span:last-child {
+		position: absolute;
+		right: 0;
+		color: #aaa;
+
+		font-size: 10px;
+
+		letter-spacing: 0.16em;
+	}
+
+	.full-preview {
+		width: min(700px, 100%);
+		margin: 45px auto 0;
+
+		padding:
+			0 8px 90px;
+
+		color: #171717;
+
+		font-size: 16px;
+
+		line-height: 2;
+	}
+
+	.full-preview p {
+		margin-bottom: 24px;
+	}
+
+	.full-preview h1 {
+		font-size: 42px;
+
+		margin-bottom: 30px;
+	}
+
+	.full-preview h2 {
+		font-size: 30px;
+
+		margin-top: 50px;
+	}
+
+	.full-preview h3 {
+		font-size: 23px;
+
+		margin-top: 38px;
+	}
+
+
+	/* ========================================
+	   编辑模式提示条
+	======================================== */
+
+	.edit-banner {
+		display: flex;
+
+		align-items: center;
+
+		justify-content: space-between;
+		gap: 14px;
+
+		margin-bottom: 24px;
+		padding: 13px 17px;
+
+		border: 1px solid #e3d9b8;
+
+		border-radius: 8px;
+
+		background: #fdf8e7;
+	}
+
+	.edit-banner[hidden] {
+		display: none;
+	}
+
+	.edit-banner-text {
+		color: #6b5d26;
+
+		font-size: 13.5px;
+	}
+
+	.exit-edit-button {
+		padding: 7px 13px;
+
+		border: 1px solid #d9cba1;
+
+		border-radius: 6px;
+
+		background: #fff;
+
+		color: #6b5d26;
+
+		font-size: 12.5px;
+
+		cursor: pointer;
+
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.exit-edit-button:hover {
+		background: #f6efdb;
+
+		border-color: #c4b483;
+	}
+
+	/* ========================================
+	   文章管理
+	======================================== */
+
+	.manage-section {
+		margin-top: 90px;
+
+		padding-top: 40px;
+
+		border-top: 1px solid #e1e1de;
+	}
+
+	.manage-header {
+		display: flex;
+
+		align-items: baseline;
+
+		justify-content: space-between;
+
+		margin-bottom: 10px;
+	}
+
+	.manage-title {
+		color: #666;
+
+		font-size: 13px;
+
+		font-weight: 500;
+	}
+
+	.manage-count {
+		color: #aaa;
+
+		font-family: monospace;
+
+		font-size: 11px;
+	}
+
+	.manage-row {
+		display: flex;
+
+		align-items: center;
+
+		justify-content: space-between;
+		gap: 16px;
+
+		padding: 16px 4px;
+
+		border-bottom: 1px solid #ececea;
+	}
+
+	.manage-info {
+		display: flex;
+
+		flex-direction: column;
+		gap: 5px;
+
+		min-width: 0;
+	}
+
+	.manage-info strong {
+		color: #222;
+
+		font-size: 14.5px;
+
+		font-weight: 500;
+
+		overflow: hidden;
+
+		text-overflow: ellipsis;
+
+		white-space: nowrap;
+	}
+
+	.manage-info span {
+		color: #aaa;
+
+		font-family: monospace;
+
+		font-size: 11px;
+	}
+
+	.manage-actions {
+		display: flex;
+
+		align-items: center;
+		gap: 6px;
+
+		flex-shrink: 0;
+	}
+
+	.manage-actions a,
+	.manage-actions button {
+		padding: 6px 11px;
+
+		border: 1px solid #dededb;
+
+		border-radius: 6px;
+
+		background: #fff;
+
+		color: #555;
+
+		font-size: 12px;
+
+		text-decoration: none;
+
+		cursor: pointer;
+
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.manage-actions a:hover,
+	.manage-actions button:hover {
+		background: #f3f3f0;
+
+		border-color: #c8c8c4;
+
+		color: #111;
+	}
+
+	.manage-actions .manage-delete:hover {
+		background: #fdf0ef;
+
+		border-color: #e3b7b3;
+
+		color: #a33;
+	}
+
+	.manage-actions button:disabled {
+		opacity: 0.55;
+
+		cursor: wait;
+	}
+
+	/* 手机端 */
+
+	@media (max-width: 700px) {
+		.math-symbol {
+			opacity: 0.04;
+		}
+
 		main {
+			width:
+				calc(100% - 30px);
+
 			padding:
-				22px 20px 70px;
+				20px
+				0
+				80px;
 		}
 
 		header {
-			padding-bottom: 55px;
+			padding-bottom: 60px;
 		}
 
 		.header-right {
-			gap: 10px;
+			gap: 0;
 		}
 
-		#saveStatus {
+		.write-label {
 			display: none;
 		}
 
+		.intro {
+			margin-bottom: 42px;
+		}
+
 		h1 {
-			margin-bottom: 40px;
+			font-size:
+				clamp(
+					46px,
+					14vw,
+					64px
+				);
+		}
+
+		.intro-text {
+			font-size: 13px;
 		}
 
 		.two-columns {
 			grid-template-columns: 1fr;
+
+			gap: 28px;
+		}
+
+		.content-header {
+			align-items: center;
+		}
+
+		.editor-tabs {
+			flex-shrink: 0;
 		}
 
 		textarea,
-		.preview {
-			min-height: 340px;
-		}
-
-		.tools {
-			flex-wrap: wrap;
-		}
-
-		.upload-button,
-		.secondary-button {
-			min-height: 44px;
-		}
-
-		input,
-		select,
-		textarea {
+		.content-editor {
+			min-height: 600px;
+			padding: 22px 20px;
 			font-size: 16px;
+			line-height: 1.95;
+			color: #000000 !important;
+			-webkit-text-fill-color: #000000 !important;
+			text-fill-color: #000000 !important;
+		}
+
+		.preview {
+			min-height: 520px;
+
+			padding:
+				25px 20px;
+		}
+
+		.tool-hint {
+			width: 100%;
+
+			margin-left: 0;
+		}
+
+		.publish-button {
+			height: 54px;
+		}
+
+		.manage-row {
+			align-items: flex-start;
+
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.manage-actions {
+			width: 100%;
+		}
+
+		.preview-section {
+			margin-top: 70px;
+		}
+
+		.full-preview {
+			padding:
+				0 4px 50px;
+
+			font-size: 16px;
+		}
+
+		.full-preview h1 {
+			font-size: 34px;
+		}
+
+		.full-preview h2 {
+			font-size: 27px;
+		}
+
+		.full-preview h3 {
+			font-size: 21px;
+		}
+
+		.full-preview img {
+			max-width: 100%;
+			max-height: 520px;
+
+			margin:
+				24px auto;
+		}
+	}
+
+
+	/* ========================================
+	   更小的手机
+	======================================== */
+
+	@media (max-width: 420px) {
+		main {
+			width:
+				calc(100% - 24px);
+		}
+
+		header {
+			padding-bottom: 50px;
+		}
+
+		textarea,
+		.content-editor {
+			min-height: 560px;
+			color: #000000 !important;
+			-webkit-text-fill-color: #000000 !important;
+			text-fill-color: #000000 !important;
+		}
+
+		.content-header > div:first-child {
+			gap: 6px;
+		}
+
+		.markdown-hint {
+			display: none;
+		}
+
+		.tab {
+			padding:
+				7px 10px;
+		}
+
+		.full-preview h1 {
+			font-size: 30px;
 		}
 	}
 </style>
