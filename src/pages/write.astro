@@ -265,6 +265,16 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 						</div>
 					</div>
 
+					<div class="format-toolbar" role="toolbar" aria-label="正文格式">
+						<button type="button" class="format-button" id="boldButton" title="加粗" aria-label="加粗">
+							<strong>B</strong>
+						</button>
+						<label class="color-picker" title="文字颜色">
+							<span aria-hidden="true">A</span>
+							<input id="textColor" type="color" value="#c2413d" aria-label="文字颜色" />
+						</label>
+					</div>
+
 					<!-- ================================
 					     编辑区域
 					================================ -->
@@ -558,6 +568,12 @@ $$"
 			const manageCount =
 				document.querySelector("#manageCount");
 
+			const boldButton =
+				document.querySelector("#boldButton");
+
+			const textColor =
+				document.querySelector("#textColor");
+
 
 			// ========================================
 			// 编辑模式状态
@@ -632,13 +648,70 @@ $$"
 					.join("\n\n");
 			}
 
+			function serializeEditorNode(node) {
+				if (node.nodeType === Node.TEXT_NODE) {
+					return node.textContent || "";
+				}
+
+				if (node.nodeType !== Node.ELEMENT_NODE) {
+					return "";
+				}
+
+				const element = node;
+				const inner = [...element.childNodes]
+					.map(serializeEditorNode)
+					.join("");
+
+				if (element.tagName === "BR") {
+					return "\n";
+				}
+
+				if (element.tagName === "STRONG" || element.tagName === "B") {
+					return `**${inner}**`;
+				}
+
+				if (element.tagName === "EM" || element.tagName === "I") {
+					return `*${inner}*`;
+				}
+
+				if (element.tagName === "SPAN" && element.style.color) {
+					const color = element.style.color;
+					if (/^#[0-9a-f]{6}$/i.test(color)) {
+						return `<span style="color: ${color}">${inner}</span>`;
+					}
+				}
+
+				if (element.tagName === "FONT" && element.color) {
+					const color = element.color;
+					if (/^#[0-9a-f]{6}$/i.test(color)) {
+						return `<span style="color: ${color}">${inner}</span>`;
+					}
+				}
+
+				if (["DIV", "P"].includes(element.tagName)) {
+					return `${inner}\n\n`;
+				}
+
+				return inner;
+			}
+
 			function getContent() {
-				return content.innerText.replace(/\u00a0/g, " ");
+				return [...content.childNodes]
+					.map(serializeEditorNode)
+					.join("")
+					.replace(/\u00a0/g, " ")
+					.trim();
 			}
 
 
 			function setContent(value) {
-				content.innerText = value || "";
+				let html = escapeHtml(value || "");
+				html = html
+					.replace(/&lt;strong&gt;(.*?)&lt;\/strong&gt;/gis, "<strong>$1</strong>")
+					.replace(/\*\*(.*?)\*\*/gs, "<strong>$1</strong>")
+					.replace(/&lt;span style=&quot;color:\s*(#[0-9a-f]{6})&quot;&gt;(.*?)&lt;\/span&gt;/gis, '<span style="color: $1">$2</span>')
+					.replace(/\n/g, "<br>");
+				content.innerHTML = html;
 			}
 
 
@@ -967,52 +1040,20 @@ $$"
 			}
 
 
-			// 强制正文编辑器使用纯黑文字。
-			// 某些手机浏览器/系统主题可能会自行降低 textarea 的文字对比度，
-			// 所以这里再设置一次 inline style，确保实际输入内容清晰可见。
-			function forceEditorTextBlack() {
-				content.style.setProperty(
-					"color",
-					"#000000",
-					"important"
-				);
-				content.style.setProperty(
-					"-webkit-text-fill-color",
-					"#000000",
-					"important"
-				);
-				content.style.setProperty(
-					"opacity",
-					"1",
-					"important"
-				);
-				content.style.setProperty(
-					"caret-color",
-					"#000000",
-					"important"
-				);
-				content.style.setProperty(
-					"font-weight",
-					"500",
-					"important"
-				);
-				content.style.setProperty(
-					"-webkit-font-smoothing",
-					"auto",
-					"important"
-				);
-				content.style.setProperty(
-					"text-shadow",
-					"0 0 0 #000000",
-					"important"
-				);
-			}
+			function applyFormat(command, value = null) {
+			content.focus();
+			document.execCommand(command, false, value);
+			scheduleSave();
+		}
 
-			forceEditorTextBlack();
-			content.addEventListener(
-				"focus",
-				forceEditorTextBlack
-			);
+			boldButton.addEventListener("mousedown", (event) => {
+				event.preventDefault();
+				applyFormat("bold");
+			});
+
+			textColor.addEventListener("input", () => {
+			applyFormat("foreColor", textColor.value);
+			});
 
 
 			// ========================================
@@ -1038,6 +1079,11 @@ $$"
 
 			function renderInlineMarkdown(content) {
 				let html = escapeHtml(content);
+
+				html = html.replace(
+					/&lt;span style=&quot;color:\s*(#[0-9a-f]{6})&quot;&gt;(.*?)&lt;\/span&gt;/gis,
+					'<span style="color: $1">$2</span>'
+				);
 
 				html = html.replace(
 					/!\[(.*?)\]\((.*?)\)/g,
