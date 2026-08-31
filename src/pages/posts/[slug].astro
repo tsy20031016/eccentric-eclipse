@@ -504,6 +504,16 @@ const minutes = readingTime(post.body ?? "");
 		font-size: 0.88em;
 	}
 
+	/* Keep KaTeX's script scale independent from article typography. */
+	.article-content :global(.katex) {
+		font-size: 1.21em;
+		line-height: normal;
+	}
+
+	.article-content :global(.katex .mtight) {
+		font-size: 0.7em;
+	}
+
 	/* 代码块（Shiki 高亮） */
 	.article-content :global(pre) {
 		position: relative;
