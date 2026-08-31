@@ -155,7 +155,7 @@ async function createPost(request, env) {
 
 	const filename = `${slugify(body.title)}-${Date.now()}.md`;
 	const fileContent =
-		buildFrontmatter(body) + String(body.content).replace(/\r\n/g, "\n");
+		buildFrontmatter(body) + normalizeMarkdownContent(body.content);
 	const path = `${POSTS_DIR}/${filename}`;
 
 	await commitFile(env, {
@@ -244,7 +244,7 @@ async function updatePost(request, env) {
 	}
 
 	const fileContent =
-		buildFrontmatter(body) + String(body.content).replace(/\r\n/g, "\n");
+		buildFrontmatter(body) + normalizeMarkdownContent(body.content);
 
 	await commitFile(env, {
 		path,
@@ -500,6 +500,11 @@ function buildFrontmatter(post) {
 	fm += "---\n\n";
 
 	return fm;
+}
+
+// Normalize line endings only. LaTeX backslashes and Markdown syntax stay untouched.
+function normalizeMarkdownContent(content) {
+	return String(content ?? "").replace(/\r\n/g, "\n");
 }
 
 function yamlString(value) {

@@ -284,6 +284,45 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 						</label>
 					</div>
 
+					<section class="formula-editor" aria-label="KaTeX 公式编辑器">
+						<div class="formula-editor-heading">
+							<strong>KaTeX 公式编辑器</strong>
+							<span>选择模板，修改公式后插入正文</span>
+						</div>
+						<div class="formula-templates">
+							<button type="button" data-formula-template="x^2">幂与上下标</button>
+							<button type="button" data-formula-template="\frac{a}{b}">分数</button>
+							<button type="button" data-formula-template="\sqrt[n]{x}">根式</button>
+							<button type="button" data-formula-template="\sum_{i=1}^{n} i">求和</button>
+							<button type="button" data-formula-template="\prod_{i=1}^{n} a_i">连乘</button>
+							<button type="button" data-formula-template="\int_a^b f(x)\,dx">积分</button>
+							<button type="button" data-formula-template="\lim_{x\to 0} \frac{\sin x}{x}">极限</button>
+							<button type="button" data-formula-template="\partial f / \partial x">偏导</button>
+							<button type="button" data-formula-template="\nabla f">梯度</button>
+							<button type="button" data-formula-template="\begin{pmatrix}a&b\\c&d\end{pmatrix}">矩阵</button>
+							<button type="button" data-formula-template="\det(A)">行列式</button>
+							<button type="button" data-formula-template="\mathbf{v}\cdot\mathbf{w}">向量</button>
+							<button type="button" data-formula-template="P(A\mid B)">条件概率</button>
+							<button type="button" data-formula-template="\mathbb{E}[X]">期望</button>
+							<button type="button" data-formula-template="\sim \mathcal{N}(\mu,\sigma^2)">正态分布</button>
+							<button type="button" data-formula-template="\forall x \in A">集合与逻辑</button>
+							<button type="button" data-formula-template="\alpha + \beta = \gamma">希腊字母</button>
+							<button type="button" data-formula-template="\leq \geq \neq \approx">关系符号</button>
+							<button type="button" data-formula-template="\Rightarrow \Leftrightarrow">推导符号</button>
+							<button type="button" data-formula-template="\hat{x},\bar{x},\tilde{x}">重音符号</button>
+							<button type="button" data-formula-template="\left( \frac{a}{b} \right)">自动括号</button>
+						</div>
+						<div class="formula-editor-row">
+							<textarea id="formulaInput" rows="2" placeholder="例如：\frac{-b \pm \sqrt{b^2-4ac}}{2a}"></textarea>
+							<div id="formulaPreview" class="formula-preview" aria-live="polite">公式预览</div>
+						</div>
+						<div class="formula-editor-actions">
+							<label><input type="radio" name="formulaMode" value="inline" checked /> 行内公式</label>
+							<label><input type="radio" name="formulaMode" value="display" /> 独立公式</label>
+							<button type="button" id="insertFormula">插入正文</button>
+						</div>
+					</section>
+
 					<!-- ================================
 					     编辑区域
 					================================ -->
@@ -586,6 +625,15 @@ $$"
 			const textSize =
 				document.querySelector("#textSize");
 
+			const formulaInput =
+				document.querySelector("#formulaInput");
+
+			const formulaPreview =
+				document.querySelector("#formulaPreview");
+
+			const insertFormula =
+				document.querySelector("#insertFormula");
+
 
 			// ========================================
 			// 编辑模式状态
@@ -624,34 +672,45 @@ $$"
 					.split("\n");
 
 				const blocks = [];
-				let currentParagraph = [];
+				let index = 0;
 
-				for (const line of lines) {
+				while (index < lines.length) {
+					const line = lines[index];
 					const trimmed = line.replace(/\u00a0/g, " ").trim();
 
-					if (!trimmed) {
-						if (currentParagraph.length) {
-							blocks.push(currentParagraph.join(" "));
-							currentParagraph = [];
+					if (trimmed === "$$" || trimmed === "\\[") {
+						const closingDelimiter = trimmed === "$$" ? "$$" : "\\]";
+						const formulaLines = [trimmed];
+						index += 1;
+
+						while (index < lines.length) {
+							const formulaLine = lines[index];
+							formulaLines.push(formulaLine);
+							index += 1;
+
+							if (formulaLine.trim() === closingDelimiter) {
+								break;
+							}
 						}
+
+						blocks.push(formulaLines.join("\n"));
+						continue;
+					}
+
+					if (!trimmed) {
+						index += 1;
 						continue;
 					}
 
 					if (/^(?:#{1,6}\s|[-*]\s|\d+\.\s|>\s)/.test(trimmed)) {
-						if (currentParagraph.length) {
-							blocks.push(currentParagraph.join(" "));
-							currentParagraph = [];
-						}
 						blocks.push(trimmed);
+						index += 1;
 						continue;
 					}
 
 					// 每按一次回车，都当作一个新段落
 					blocks.push(trimmed);
-				}
-
-				if (currentParagraph.length) {
-					blocks.push(currentParagraph.join(" "));
+					index += 1;
 				}
 
 				return blocks
@@ -659,6 +718,20 @@ $$"
 					.map((block) => block.trim())
 					.join("\n\n");
 			}
+
+			function colorToHex(color) {
+				if (/^#[0-9a-f]{6}$/i.test(color)) {
+					return color;
+				}
+
+				const match = color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+				if (!match) {
+					return null;
+				}
+
+				return `#${match.slice(1).map((value) => Number(value).toString(16).padStart(2, "0")).join("")}`;
+			}
+
 
 			function serializeEditorNode(node) {
 				if (node.nodeType === Node.TEXT_NODE) {
@@ -687,15 +760,15 @@ $$"
 				}
 
 				if (element.tagName === "SPAN" && element.style.color) {
-					const color = element.style.color;
-					if (/^#[0-9a-f]{6}$/i.test(color)) {
+					const color = colorToHex(element.style.color);
+					if (color) {
 						return `<span style="color: ${color}">${inner}</span>`;
 					}
 				}
 
 				if (element.tagName === "FONT" && element.color) {
-					const color = element.color;
-					if (/^#[0-9a-f]{6}$/i.test(color)) {
+					const color = colorToHex(element.color);
+					if (color) {
 						return `<span style="color: ${color}">${inner}</span>`;
 					}
 				}
@@ -729,8 +802,8 @@ $$"
 				html = html
 					.replace(/&lt;strong&gt;(.*?)&lt;\/strong&gt;/gis, "<strong>$1</strong>")
 					.replace(/\*\*(.*?)\*\*/gs, "<strong>$1</strong>")
-					.replace(/&lt;span style=&quot;color:\s*(#[0-9a-f]{6})&quot;&gt;(.*?)&lt;\/span&gt;/gis, '<span style="color: $1">$2</span>')
-					.replace(/&lt;span style=&quot;font-size:\s*(\d+px)&quot;&gt;(.*?)&lt;\/span&gt;/gis, '<span style="font-size: $1">$2</span>')
+					.replace(/&lt;span style="color:\s*(#[0-9a-f]{6})"&gt;(.*?)&lt;\/span&gt;/gis, '<span style="color: $1">$2</span>')
+					.replace(/&lt;span style="font-size:\s*(\d+px)"&gt;(.*?)&lt;\/span&gt;/gis, '<span style="font-size: $1">$2</span>')
 					.replace(/\n/g, "<br>");
 				content.innerHTML = html;
 			}
@@ -1106,8 +1179,13 @@ $$"
 				let html = escapeHtml(content);
 
 				html = html.replace(
-					/&lt;span style=&quot;color:\s*(#[0-9a-f]{6})&quot;&gt;(.*?)&lt;\/span&gt;/gis,
+					/&lt;span style="color:\s*(#[0-9a-f]{6})"&gt;(.*?)&lt;\/span&gt;/gis,
 					'<span style="color: $1">$2</span>'
+				);
+
+				html = html.replace(
+					/&lt;span style="font-size:\s*(\d+px)"&gt;(.*?)&lt;\/span&gt;/gis,
+					'<span style="font-size: $1">$2</span>'
 				);
 
 				html = html.replace(
@@ -1142,23 +1220,26 @@ $$"
 
 				const blocks = [];
 				let currentBlock = [];
-				let inDisplayMath = false;
+				let displayClosingDelimiter = null;
 
 				for (const line of source.split("\n")) {
-					if (line.trim() === "$$") {
-						inDisplayMath = !inDisplayMath;
+					const trimmedLine = line.trim();
+
+					if (trimmedLine === "$$" || trimmedLine === "\\[") {
+						displayClosingDelimiter = trimmedLine === "$$" ? "$$" : "\\]";
 						currentBlock.push(line);
-
-						if (!inDisplayMath) {
-							blocks.push(currentBlock.join("\n"));
-							currentBlock = [];
-						}
-
 						continue;
 					}
 
-					if (inDisplayMath) {
+					if (displayClosingDelimiter) {
 						currentBlock.push(line);
+
+						if (trimmedLine === displayClosingDelimiter) {
+							blocks.push(currentBlock.join("\n"));
+							currentBlock = [];
+							displayClosingDelimiter = null;
+						}
+
 						continue;
 					}
 
@@ -1186,7 +1267,7 @@ $$"
 							return "";
 						}
 
-						if (/^\$\$[\s\S]*\$\$$/.test(value)) {
+						if (/^(?:\$\$[\s\S]*\$\$|\\\[[\s\S]*\\\])$/.test(value)) {
 							return `<div class="math-preview">${renderInlineMarkdown(value)}</div>`;
 						}
 
@@ -1273,6 +1354,65 @@ $$"
 			}
 
 
+			function retryPreviewMath(attempt = 0) {
+				renderPreviewMath();
+
+				if (!window.renderMathInElement && attempt < 10) {
+					setTimeout(() => retryPreviewMath(attempt + 1), 150);
+				}
+			}
+
+
+			function renderFormulaEditorPreview() {
+				const formula = formulaInput.value.trim();
+				formulaPreview.textContent = "";
+
+				if (!formula) {
+					formulaPreview.textContent = "公式预览";
+					return;
+				}
+
+				if (window.katex) {
+					window.katex.render(formula, formulaPreview, {
+						displayMode: false,
+						throwOnError: false,
+						trust: false,
+					});
+				} else {
+					formulaPreview.textContent = formula;
+				}
+			}
+
+
+			formulaInput.addEventListener("input", renderFormulaEditorPreview);
+			document.querySelectorAll("[data-formula-template]").forEach((button) => {
+				button.addEventListener("click", () => {
+					formulaInput.value = button.dataset.formulaTemplate || "";
+					renderFormulaEditorPreview();
+					formulaInput.focus();
+				});
+			});
+
+			insertFormula.addEventListener("click", () => {
+				const formula = formulaInput.value.trim();
+				if (!formula) {
+					formulaInput.focus();
+					return;
+				}
+
+				const mode = document.querySelector('input[name="formulaMode"]:checked').value;
+				const wrapped = mode === "display"
+					? `\n\n$$\n${formula}\n$$\n\n`
+					: `$${formula}$`;
+				insertAtCursor(wrapped);
+			});
+
+			window.addEventListener("load", () => {
+				renderFormulaEditorPreview();
+				retryPreviewMath();
+			}, { once: true });
+
+
 			function renderPreview() {
 				const html =
 					markdownToHtml(
@@ -1284,7 +1424,7 @@ $$"
 				fullPreview.innerHTML =
 					html;
 
-				renderPreviewMath();
+				retryPreviewMath();
 			}
 
 			window.addEventListener("load", renderPreviewMath, { once: true });
@@ -2829,6 +2969,95 @@ $$"
 		color: #444;
 		font: inherit;
 		cursor: pointer;
+	}
+
+	.formula-editor {
+		margin: 8px 0 12px;
+		padding: 10px 12px;
+		border: 1px solid #dededb;
+		border-radius: 8px;
+		background: #fafaf8;
+	}
+
+	.formula-editor-heading,
+	.formula-editor-actions {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.formula-editor-heading span {
+		color: #888;
+		font-size: 12px;
+	}
+
+	.formula-templates {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+		margin: 8px 0;
+	}
+
+	.formula-templates button,
+	.formula-editor-actions button {
+		padding: 6px 10px;
+		border: 1px solid #d5d5d0;
+		border-radius: 5px;
+		background: #fff;
+		color: #555;
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	.formula-templates button:hover,
+	.formula-editor-actions button:hover {
+		border-color: #999;
+		color: #111;
+	}
+
+	.formula-editor-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 8px;
+	}
+
+	#formulaInput {
+		width: 100%;
+		resize: vertical;
+		min-height: 52px;
+		padding: 7px 9px;
+		border: 1px solid #d5d5d0;
+		border-radius: 5px;
+		background: #fff;
+		color: #222;
+		font-family: monospace;
+		font-size: 14px;
+	}
+
+	.formula-preview {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 52px;
+		overflow-x: auto;
+		padding: 6px 8px;
+		border: 1px solid #e5e5e0;
+		background: #fff;
+		color: #777;
+		text-align: center;
+	}
+
+	.formula-editor-actions {
+		margin-top: 7px;
+		color: #666;
+		font-size: 12px;
+	}
+
+	@media (max-width: 600px) {
+		.formula-editor-row {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.tools {
