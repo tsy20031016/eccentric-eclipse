@@ -148,6 +148,10 @@ const minutes = readingTime(post.body ?? "");
 		const paragraphs = [...articleContent.querySelectorAll("p")];
 
 		paragraphs.forEach((paragraph) => {
+			if (paragraph.querySelector(".katex")) {
+				return;
+			}
+
 			const text = (paragraph.textContent || "").replace(/\u00a0/g, " ").trim();
 
 			if (!text.includes("\n") && !text.includes("\r")) {
@@ -498,6 +502,24 @@ const minutes = readingTime(post.body ?? "");
 		border-radius: 4px;
 		font-family: monospace;
 		font-size: 0.88em;
+	}
+
+	/* Keep KaTeX's TeX-sized scripts from inheriting the article line height. */
+	.article-content :global(.katex) {
+		font-size: 1.21em;
+		line-height: 1.2;
+		text-rendering: auto;
+	}
+
+	.article-content :global(.katex .supsub) {
+		font-size: 0.7em;
+		line-height: 0;
+	}
+
+	.article-content :global(.katex-display) {
+		margin: 1em 0;
+		overflow-x: auto;
+		overflow-y: hidden;
 	}
 
 	/* 代码块（Shiki 高亮） */
