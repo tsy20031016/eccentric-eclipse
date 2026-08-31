@@ -504,12 +504,6 @@ const minutes = readingTime(post.body ?? "");
 		font-size: 0.88em;
 	}
 
-	/* Let KaTeX control its own glyph sizes and script positioning. */
-	.article-content :global(.katex) {
-		line-height: normal;
-		text-rendering: auto;
-	}
-
 	/* 代码块（Shiki 高亮） */
 	.article-content :global(pre) {
 		position: relative;
