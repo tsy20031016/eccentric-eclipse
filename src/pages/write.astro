@@ -1115,7 +1115,43 @@ $$"
 					return "";
 				}
 
-				const blocks = source.split(/\n\s*\n/).filter(Boolean);
+				const blocks = [];
+				let currentBlock = [];
+				let inDisplayMath = false;
+
+				for (const line of source.split("\n")) {
+					if (line.trim() === "$$") {
+						inDisplayMath = !inDisplayMath;
+						currentBlock.push(line);
+
+						if (!inDisplayMath) {
+							blocks.push(currentBlock.join("\n"));
+							currentBlock = [];
+						}
+
+						continue;
+					}
+
+					if (inDisplayMath) {
+						currentBlock.push(line);
+						continue;
+					}
+
+					if (!line.trim()) {
+						if (currentBlock.length) {
+							blocks.push(currentBlock.join("\n"));
+							currentBlock = [];
+						}
+
+						continue;
+					}
+
+					currentBlock.push(line);
+				}
+
+				if (currentBlock.length) {
+					blocks.push(currentBlock.join("\n"));
+				}
 
 				return blocks
 					.map((block) => {
@@ -1123,6 +1159,10 @@ $$"
 
 						if (!value) {
 							return "";
+						}
+
+						if (/^\$\$[\s\S]*\$\$$/.test(value)) {
+							return `<div class="math-preview">${renderInlineMarkdown(value)}</div>`;
 						}
 
 						if (/^###\s+/.test(value)) {
@@ -1170,6 +1210,44 @@ $$"
 			}
 
 
+			function renderPreviewMath() {
+				if (!window.renderMathInElement) {
+					return;
+				}
+
+				const delimiters = [
+					{
+						left: "$$",
+						right: "$$",
+						display: true,
+					},
+					{
+						left: "$",
+						right: "$",
+						display: false,
+					},
+					{
+						left: "\\(",
+						right: "\\)",
+						display: false,
+					},
+					{
+						left: "\\[",
+						right: "\\]",
+						display: true,
+					},
+				];
+
+				const options = {
+					delimiters,
+					throwOnError: false,
+				};
+
+				window.renderMathInElement(preview, options);
+				window.renderMathInElement(fullPreview, options);
+			}
+
+
 			function renderPreview() {
 				const html =
 					markdownToHtml(
@@ -1181,47 +1259,10 @@ $$"
 				fullPreview.innerHTML =
 					html;
 
-				// 预览里渲染数学公式（KaTeX auto-render，脚本未加载完成时静默跳过）
-				if (window.renderMathInElement) {
-					const delimiters = [
-						{
-							left: "$$",
-							right: "$$",
-							display: true,
-						},
-						{
-							left: "$",
-							right: "$",
-							display: false,
-						},
-						{
-							left: "\\(",
-							right: "\\)",
-							display: false,
-						},
-						{
-							left: "\\[",
-							right: "\\]",
-							display: true,
-						},
-					];
-
-					const options = {
-						delimiters,
-						throwOnError: false,
-					};
-
-					window.renderMathInElement(
-						preview,
-						options
-					);
-
-					window.renderMathInElement(
-						fullPreview,
-						options
-					);
-				}
+				renderPreviewMath();
 			}
+
+			window.addEventListener("load", renderPreviewMath, { once: true });
 
 
 			function showPreview() {
@@ -3035,6 +3076,19 @@ $$"
 		font-size: 23px;
 
 		margin-top: 38px;
+	}
+
+	.full-preview :global(.katex-display) {
+		margin: 2.25em 0;
+		padding: 0 8px;
+		overflow-x: auto;
+		overflow-y: hidden;
+		text-align: center;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.full-preview :global(.katex-display > .katex) {
+		white-space: nowrap;
 	}
 
 
