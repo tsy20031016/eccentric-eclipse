@@ -183,10 +183,6 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 							<span>分类</span>
 
 							<select id="category">
-								<option value="随笔">
-									随笔
-								</option>
-
 								<option value="数学">
 									数学
 								</option>
@@ -195,12 +191,8 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 									AI
 								</option>
 
-								<option value="技术">
-									技术
-								</option>
-
-								<option value="生活">
-									生活
+								<option value="日记">
+									日记
 								</option>
 							</select>
 						</label>
@@ -2355,10 +2347,11 @@ $$"
 
 	.editor {
 		width: 100%;
+		position: relative;
 	}
 
 	.intro {
-		margin-bottom: 58px;
+		margin-bottom: 46px;
 	}
 
 	.eyebrow {
@@ -2407,7 +2400,7 @@ $$"
 
 		flex-direction: column;
 
-		gap: 28px;
+		gap: 24px;
 	}
 
 	.field {
@@ -2644,7 +2637,7 @@ $$"
 		overflow: auto;
 		border-radius: 9px;
 		border: 1px solid #dededb;
-		background: #ffffff;
+		background: rgba(255, 255, 253, 0.94);
 		color: #000000;
 		-webkit-text-fill-color: #000000;
 		caret-color: #000000;
@@ -2683,6 +2676,14 @@ $$"
 	.content-editor:focus {
 		border-color: #b8b8b4;
 		box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.035), 0 3px 12px rgba(0, 0, 0, 0.035);
+	}
+
+	.format-toolbar,
+	.formula-editor,
+	.editor-wrapper,
+	.preview-section {
+		position: relative;
+		z-index: 1;
 	}
 
 	.content-editor::selection {

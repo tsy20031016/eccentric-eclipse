@@ -1,10 +1,16 @@
 ---
 import Header from "../components/Header.astro";
 import { getCollection } from "astro:content";
+import ArticleList from "../components/ArticleList.astro";
 
-const posts = (await getCollection("posts"))
+const allPosts = (await getCollection("posts"))
 	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-	.slice(0, 4);
+
+const posts = allPosts.slice(0, 4);
+
+const mathPosts = allPosts.filter((post) => post.data.category === "数学").slice(0, 2);
+const aiPosts = allPosts.filter((post) => post.data.category === "AI").slice(0, 2);
+const diaryPosts = allPosts.filter((post) => post.data.category === "日记").slice(0, 2);
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
@@ -36,6 +42,12 @@ const aboutUrl = `${base}about/`;
 			========================================= -->
 
 			<section class="hero">
+				<div class="math-scatter" aria-hidden="true">
+					<span class="scatter-1">∑</span>
+					<span class="scatter-2">lim x → 0</span>
+					<span class="scatter-3">ℝ</span>
+					<span class="scatter-4">∂</span>
+				</div>
 				<div class="hero-inner">
 					<p class="eyebrow">
 						MATHEMATICS · THOUGHTS · LIFE
@@ -68,6 +80,28 @@ const aboutUrl = `${base}about/`;
 
 				<div class="hero-mark">
 					<span>∫</span>
+				</div>
+			</section>
+
+			<section class="thinking-section">
+				<div class="section-label">
+					<span>NOW</span>
+					<span>CURRENTLY THINKING ABOUT</span>
+				</div>
+				<div class="thinking-list">
+					<span>Mathematical Analysis</span>
+					<span>AI</span>
+					<span>LaTeX</span>
+					<span>Programming</span>
+				</div>
+			</section>
+
+			<section class="category-notes-section">
+				<div class="section-label"><span>02</span><span>RECENT NOTES</span></div>
+				<div class="category-note-grid">
+					<section class="category-note"><h2>数学</h2><ArticleList posts={mathPosts} showCategory={false} /></section>
+					<section class="category-note"><h2>AI</h2><ArticleList posts={aiPosts} showCategory={false} /></section>
+					<section class="category-note"><h2>日记</h2><ArticleList posts={diaryPosts} showCategory={false} /></section>
 				</div>
 			</section>
 
@@ -118,7 +152,7 @@ const aboutUrl = `${base}about/`;
 				<div class="section-heading">
 					<div>
 						<div class="section-label">
-							<span>02</span>
+										<span>03</span>
 							<span>LATEST POSTS</span>
 						</div>
 
@@ -177,7 +211,7 @@ const aboutUrl = `${base}about/`;
 
 			<section class="projects-section">
 				<div class="section-label">
-					<span>03</span>
+					<span>04</span>
 					<span>PROJECTS</span>
 				</div>
 
@@ -326,7 +360,7 @@ const aboutUrl = `${base}about/`;
 
 	.hero {
 		position: relative;
-		min-height: 680px;
+		min-height: 610px;
 
 		display: flex;
 		align-items: center;
@@ -335,6 +369,34 @@ const aboutUrl = `${base}about/`;
 
 		overflow: hidden;
 	}
+
+	.hero::before {
+		position: absolute;
+		inset: 22px 0 auto;
+		height: 1px;
+		background: #e5e5df;
+		content: "";
+	}
+
+	.math-scatter {
+		position: absolute;
+		inset: 0;
+		color: #a2a08e;
+		font-family: Georgia, serif;
+		font-size: 20px;
+		opacity: 0.25;
+		pointer-events: none;
+	}
+
+	.math-scatter span {
+		position: absolute;
+		opacity: 0.3;
+	}
+
+	.scatter-1 { top: 20%; right: 17%; font-size: 34px; transform: rotate(12deg); }
+	.scatter-2 { top: 67%; left: 12%; font-size: 14px; transform: rotate(-7deg); }
+	.scatter-3 { top: 79%; right: 8%; font-size: 28px; transform: rotate(-11deg); }
+	.scatter-4 { top: 34%; left: 5%; font-size: 24px; transform: rotate(9deg); }
 
 	.hero-inner {
 		position: relative;
@@ -452,7 +514,7 @@ const aboutUrl = `${base}about/`;
 	================================ */
 
 	section {
-		padding: 130px 0;
+		padding: 108px 0;
 	}
 
 	.section-label {
@@ -476,6 +538,36 @@ const aboutUrl = `${base}about/`;
 
 	.section-label span:last-child {
 		color: #777;
+	}
+
+	.thinking-section {
+		display: grid;
+		grid-template-columns: 1fr 2fr;
+		gap: 60px;
+		border-bottom: 1px solid #e5e5e5;
+	}
+
+	.thinking-section .section-label {
+		margin: 0;
+	}
+
+	.thinking-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 34px;
+		align-content: start;
+		padding-top: 2px;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 25px;
+	}
+
+	.thinking-list span::before {
+		margin-right: 10px;
+		color: #aaa993;
+		content: "∴";
+		font-family: Georgia, serif;
+		font-size: 13px;
+		vertical-align: middle;
 	}
 
 
@@ -547,6 +639,53 @@ const aboutUrl = `${base}about/`;
 
 	.posts-section {
 		border-bottom: 1px solid #e5e5e5;
+	}
+
+	.category-notes-section {
+		border-bottom: 1px solid #e5e5e5;
+	}
+
+	.category-note-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 24px;
+	}
+
+	.category-note h2 {
+		margin: 0 0 18px;
+		color: #33332f;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 25px;
+		font-weight: 400;
+	}
+
+	.category-note :global(.article-list) {
+		border-top: 1px solid #e5e5df;
+	}
+
+	.category-note :global(.article-row) {
+		display: block;
+		padding: 16px 0;
+	}
+
+	.category-note :global(.article-row:hover) {
+		padding-left: 6px;
+	}
+
+	.category-note :global(.article-index),
+	.category-note :global(.article-main p),
+	.category-note :global(.tags) {
+		display: none;
+	}
+
+	.category-note :global(.article-main h2) {
+		margin: 0;
+		font-size: 17px;
+	}
+
+	.category-note :global(.article-main a) {
+		margin-top: 8px;
+		font-size: 11px;
 	}
 
 	.section-heading {
@@ -937,6 +1076,16 @@ const aboutUrl = `${base}about/`;
 			gap: 40px;
 		}
 
+		.thinking-section {
+			grid-template-columns: 1fr;
+			gap: 24px;
+		}
+
+		.thinking-list {
+			gap: 9px 20px;
+			font-size: 21px;
+		}
+
 		.section-heading {
 			align-items: flex-start;
 			flex-direction: column;
@@ -966,6 +1115,11 @@ const aboutUrl = `${base}about/`;
 
 		.project-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.category-note-grid {
+			grid-template-columns: 1fr;
+			gap: 34px;
 		}
 
 		.project-card {

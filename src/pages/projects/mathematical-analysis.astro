@@ -1,0 +1,29 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProjectArchive from "../../components/ProjectArchive.astro";
+---
+
+<BaseLayout title="Mathematical Analysis · TSY">
+	<ProjectArchive
+		eyebrow="PROJECT 01"
+		title="Mathematical Analysis"
+		description="一个关于数学分析学习、整理与思考的长期项目。"
+	>
+		<section class="archive-section">
+			<h2>About</h2>
+			<p>这个项目用于持续整理数学分析中的定义、问题和学习路径。</p>
+		</section>
+		<section class="archive-section">
+			<h2>Progress</h2>
+			<p>学习进度将在未来逐步记录。</p>
+		</section>
+		<section class="archive-section">
+			<h2>Topics</h2>
+			<ol>
+				<li>Limits</li><li>Continuity</li><li>Differentiation</li><li>Integration</li><li>Series</li><li>Multivariable Analysis</li>
+			</ol>
+		</section>
+		<section class="archive-section"><h2>Notes</h2><p>预留给未来的数学分析笔记。</p></section>
+		<section class="archive-section"><h2>Project Log</h2><p>预留给项目发展过程的记录。</p></section>
+	</ProjectArchive>
+</BaseLayout>

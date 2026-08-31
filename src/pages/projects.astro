@@ -4,24 +4,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 const projects = [
 	{
 		number: "01",
-		title: "Personal Blog",
-		description:
-			"一个用 Astro 构建的个人博客，用来记录数学、技术与生活。",
-		tags: ["Astro", "Markdown", "GitHub"],
+		title: "Mathematical Analysis",
+		description: "一个关于数学分析学习、整理与思考的长期项目。",
+		tags: ["Limits", "Continuity", "Analysis"],
+		url: "mathematical-analysis/",
 	},
 	{
 		number: "02",
-		title: "AI Girlfriend",
-		description:
-			"一个属于自己的 AI 对话系统，探索 AI、记忆与长期陪伴。",
-		tags: ["Python", "FastAPI", "AI"],
-	},
-	{
-		number: "03",
-		title: "More to come",
-		description:
-			"这里留给未来。也许是数学相关的项目，也许是某个突然冒出来的想法。",
-		tags: ["Future"],
+		title: "Personal Blog",
+		description: "一个属于我的个人博客，用来记录数学、AI、技术和生活。",
+		tags: ["Astro", "KaTeX", "GitHub Pages"],
+		url: "personal-blog/",
 	},
 ];
 ---
@@ -41,7 +34,7 @@ const projects = [
 	<main class="projects-container">
 		<div class="project-list">
 			{projects.map((project) => (
-				<article class="project">
+				<a class="project" href={project.url}>
 					<div class="project-number">
 						{project.number}
 					</div>
@@ -61,7 +54,7 @@ const projects = [
 					<div class="project-arrow">
 						→
 					</div>
-				</article>
+				</a>
 			))}
 		</div>
 	</main>
@@ -71,7 +64,8 @@ const projects = [
 	.page-header {
 		max-width: 900px;
 		margin: 0 auto;
-		padding: 100px 24px 90px;
+		padding: 82px 24px 72px;
+		background: linear-gradient(90deg, rgba(239, 239, 231, 0.55), transparent 58%);
 		border-bottom: 1px solid #e5e5e5;
 	}
 
@@ -110,7 +104,7 @@ const projects = [
 		grid-template-columns: 70px 1fr 40px;
 		gap: 30px;
 		align-items: start;
-		padding: 42px 0;
+		padding: 34px 0;
 		border-bottom: 1px solid #e5e5e5;
 		transition: padding-left 0.2s ease;
 	}
@@ -135,7 +129,7 @@ const projects = [
 	.project-main p {
 		max-width: 580px;
 		margin: 0;
-		color: #777;
+		color: #3f3f3a;
 		line-height: 1.8;
 	}
 
@@ -149,7 +143,7 @@ const projects = [
 	.tags span {
 		padding: 5px 9px;
 		border: 1px solid #ddd;
-		color: #888;
+		color: #66665f;
 		font-family: monospace;
 		font-size: 11px;
 	}

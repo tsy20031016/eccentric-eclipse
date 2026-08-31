@@ -1,0 +1,33 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArticleList from "../components/ArticleList.astro";
+
+const posts = (await getCollection("posts"))
+	.filter((post) => post.data.category === "日记")
+	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title="日记 · TSY">
+	<header class="page-header">
+		<p class="eyebrow">DIARY</p>
+		<h1>日记。</h1>
+		<p class="intro">一些不必归类，只想认真留下来的日常。</p>
+	</header>
+	<main class="content-container">
+		<div class="section-marker"><span>∞</span><span>{posts.length} 篇记录</span></div>
+		<ArticleList posts={posts} showCategory={false} />
+	</main>
+</BaseLayout>
+
+<style>
+	.page-header, .content-container { max-width: 900px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+	.page-header { padding-top: 82px; padding-bottom: 72px; border-bottom: 1px solid #e5e5df; background: linear-gradient(90deg, rgba(239,239,231,.55), transparent 58%); }
+	.eyebrow { margin: 0 0 18px; color: #8b8b83; font-size: 11px; letter-spacing: .18em; }
+	h1 { margin: 0; color: #171717; font-family: Georgia, "Times New Roman", serif; font-size: clamp(46px, 7vw, 70px); font-weight: 400; line-height: 1.1; }
+	.intro { max-width: 560px; margin: 24px 0 0; color: #4e4e4a; font-size: 16px; line-height: 1.8; }
+	.content-container { padding-top: 34px; padding-bottom: 100px; }
+	.section-marker { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; color: #8b8b83; font-family: monospace; font-size: 11px; }
+	.section-marker span:first-child { color: #aaa993; font-family: Georgia, serif; font-size: 18px; }
+	@media (max-width: 600px) { .page-header { padding: 68px 20px 58px; } .content-container { padding: 28px 20px 80px; } }
+</style>

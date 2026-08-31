@@ -1,0 +1,29 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProjectArchive from "../../components/ProjectArchive.astro";
+---
+
+<BaseLayout title="Personal Blog · TSY">
+	<ProjectArchive
+		eyebrow="PROJECT 02"
+		title="Personal Blog"
+		description="这是一个属于我的个人博客，用来记录数学、AI、技术和生活。"
+	>
+		<section class="archive-section">
+			<h2>About</h2>
+			<p>这个项目是一个持续生长的个人记录空间。</p>
+		</section>
+		<section class="archive-section">
+			<h2>Architecture</h2>
+			<ul><li>Astro</li><li>Markdown</li><li>KaTeX</li><li>GitHub Pages</li><li>Cloudflare</li></ul>
+		</section>
+		<section class="archive-section">
+			<h2>Development</h2>
+			<ol>
+				<li>Project Start</li><li>UI</li><li>Writing System</li><li>LaTeX / KaTeX</li><li>Image Upload</li><li>Deployment</li>
+			</ol>
+		</section>
+		<section class="archive-section"><h2>Development Log</h2><p>预留给博客开发过程的记录。</p></section>
+		<section class="archive-section"><h2>Ideas</h2><p>预留给未来功能想法的整理。</p></section>
+	</ProjectArchive>
+</BaseLayout>

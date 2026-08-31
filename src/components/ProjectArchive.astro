@@ -1,0 +1,36 @@
+---
+interface Props {
+	title: string;
+	eyebrow: string;
+	description: string;
+}
+
+const { title, eyebrow, description } = Astro.props;
+---
+
+<div class="archive-page">
+	<header class="archive-header">
+		<p class="eyebrow">{eyebrow}</p>
+		<h1>{title}</h1>
+		<p class="description">{description}</p>
+	</header>
+	<div class="archive-body">
+		<slot />
+	</div>
+</div>
+
+<style>
+	.archive-page { max-width: 900px; margin: 0 auto; padding: 0 24px 110px; }
+	.archive-header { padding: 82px 0 68px; border-bottom: 1px solid #e5e5df; background: linear-gradient(90deg, rgba(239,239,231,.55), transparent 60%); }
+	.eyebrow { margin: 0 0 18px; color: #8b8b83; font-family: monospace; font-size: 11px; letter-spacing: .18em; }
+	h1 { margin: 0; color: #171717; font-family: Georgia, "Times New Roman", serif; font-size: clamp(44px, 7vw, 68px); font-weight: 400; line-height: 1.1; }
+	.description { max-width: 590px; margin: 24px 0 0; color: #3f3f3a; font-size: 17px; line-height: 1.85; }
+	.archive-body :global(.archive-section) { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 48px; padding: 48px 0; border-bottom: 1px solid #e5e5df; }
+	.archive-body :global(.archive-section h2) { margin: 0; color: #33332f; font-size: 14px; font-weight: 600; }
+	.archive-body :global(.archive-section p) { max-width: 590px; margin: 0; color: #4e4e4a; font-size: 15px; line-height: 1.85; }
+	.archive-body :global(.archive-section ol) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; margin: 0; padding: 0; list-style: none; counter-reset: topic; }
+	.archive-body :global(.archive-section li) { padding: 13px 0; border-bottom: 1px solid #eee; color: #33332f; font-family: Georgia, "Times New Roman", serif; font-size: 17px; counter-increment: topic; }
+	.archive-body :global(.archive-section li::before) { margin-right: 12px; color: #aaa993; content: counter(topic, decimal-leading-zero); font-family: monospace; font-size: 10px; }
+	.archive-body :global(.archive-section ul) { margin: 0; padding-left: 18px; color: #4e4e4a; line-height: 2; }
+	@media (max-width: 600px) { .archive-page { padding: 0 20px 80px; } .archive-header { padding: 68px 0 56px; } .archive-body :global(.archive-section) { grid-template-columns: 1fr; gap: 18px; padding: 34px 0; } .archive-body :global(.archive-section ol) { grid-template-columns: 1fr; } }
+</style>

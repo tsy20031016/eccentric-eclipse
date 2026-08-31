@@ -2,7 +2,7 @@
 title: "你好，世界"
 description: "这是我的个人博客，也是这里的第一篇文章。"
 date: 2026-08-27
-category: "随笔"
+category: "日记"
 ---
 
 # 你好，世界

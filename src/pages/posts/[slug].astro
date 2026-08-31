@@ -377,8 +377,8 @@ const minutes = readingTime(post.body ?? "");
 	/* ======== 文章 ======== */
 
 	.article {
-		max-width: 760px;
-		padding: 100px 0 120px;
+		max-width: 780px;
+		padding: 82px 0 110px;
 	}
 
 	.article-header {
@@ -445,10 +445,10 @@ const minutes = readingTime(post.body ?? "");
 	/* ======== 正文 ======== */
 
 	.article-content {
-		padding-top: 60px;
-		color: #333;
+		padding-top: 52px;
+		color: #171717;
 		font-size: 17px;
-		line-height: 2;
+		line-height: 1.9;
 	}
 
 	.article-content :global(h1),
@@ -469,7 +469,7 @@ const minutes = readingTime(post.body ?? "");
 	}
 
 	.article-content :global(p) {
-		margin: 24px 0;
+		margin: 20px 0;
 	}
 
 	.article-content :global(.paragraph-split) {
@@ -481,10 +481,10 @@ const minutes = readingTime(post.body ?? "");
 	}
 
 	.article-content :global(blockquote) {
-		margin: 32px 0;
-		padding-left: 20px;
-		border-left: 2px solid #ddd;
-		color: #777;
+		margin: 30px 0;
+		padding: 4px 0 4px 22px;
+		border-left: 2px solid #aaa993;
+		color: #3f3f3a;
 	}
 
 	.article-content :global(img) {
@@ -517,11 +517,11 @@ const minutes = readingTime(post.body ?? "");
 	/* 代码块（Shiki 高亮） */
 	.article-content :global(pre) {
 		position: relative;
-		margin: 32px 0;
+		margin: 30px 0;
 		padding: 20px 22px;
 		overflow-x: auto;
 		border: 1px solid #e8e8e8;
-		border-radius: 10px;
+		border-radius: 5px;
 		background: #f8f8f8 !important;
 		font-size: 13.5px;
 		line-height: 1.75;
@@ -571,7 +571,7 @@ const minutes = readingTime(post.body ?? "");
 
 	/* Display formulas stay centered and can scroll on narrow screens. */
 	.article-content :global(.katex-display) {
-		margin: 2.25em 0;
+		margin: 2em 0;
 		padding: 0 8px;
 		overflow-x: auto;
 		overflow-y: hidden;

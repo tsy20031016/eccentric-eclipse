@@ -1,19 +1,22 @@
 <header>
 	<div class="header-inner">
-		<a class="logo" href={`${import.meta.env.BASE_URL}/`}>TSY</a>
+		<a class="logo" href={`${import.meta.env.BASE_URL}/`}><span>TSY</span><small>∫</small></a>
 
 <nav>
-	<a href={`${import.meta.env.BASE_URL}/`}>首页</a>
-	<a href={`${import.meta.env.BASE_URL}/posts/`}>文章</a>
+	<a href={`${import.meta.env.BASE_URL}/`}>Home</a>
+	<a href={`${import.meta.env.BASE_URL}/math/`}>数学</a>
+	<a href={`${import.meta.env.BASE_URL}/ai/`}>AI</a>
 	<a href={`${import.meta.env.BASE_URL}/projects/`}>项目</a>
-	<a href={`${import.meta.env.BASE_URL}/about/`}>关于</a>
+	<a href={`${import.meta.env.BASE_URL}/diary/`}>日记</a>
 </nav>
 	</div>
 </header>
 
 <style>
 	header {
-		border-bottom: 1px solid #e8e8e8;
+		border-bottom: 1px solid #e4e4dd;
+		background: rgba(251, 251, 248, 0.88);
+		backdrop-filter: blur(8px);
 	}
 
 	.header-inner {
@@ -26,11 +29,21 @@
 	}
 
 	.logo {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 7px;
 		font-size: 20px;
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		color: #202020;
 		text-decoration: none;
+	}
+
+	.logo small {
+		color: #aaa993;
+		font-family: Georgia, serif;
+		font-size: 14px;
+		font-weight: 400;
 	}
 
 	nav {
@@ -46,6 +59,28 @@
 
 	nav a:hover {
 		color: #111;
+	}
+
+	nav a {
+		position: relative;
+		transition: color 0.2s ease;
+	}
+
+	nav a::after {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -8px;
+		height: 1px;
+		background: #222;
+		content: "";
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.2s ease;
+	}
+
+	nav a:hover::after {
+		transform: scaleX(1);
 	}
 
 	@media (max-width: 600px) {
