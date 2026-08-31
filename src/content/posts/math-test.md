@@ -15,13 +15,17 @@ tags:
 独立公式：
 
 $$
+
 f(x) = ax^2 + bx + c
+
 $$
 
 当 $a \ne 0$ 时，二次函数的根为：
 
 $$
+
 x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+
 $$
 
 **加粗文字**和<span style="color: #c2413d">彩色文字</span>也应正常显示。
