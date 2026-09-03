@@ -1253,6 +1253,29 @@ $$"
 					);
 			}
 
+			function renderKatexHtml(rawExpression, displayMode = false) {
+				const expression = String(rawExpression ?? "").trim();
+
+				if (!expression) {
+					return "";
+				}
+
+				if (!window.katex) {
+					return escapeHtml(expression);
+				}
+
+				try {
+					return window.katex.renderToString(expression, {
+						displayMode,
+						throwOnError: false,
+						strict: "warn",
+						trust: false,
+					});
+				} catch (error) {
+					return `<span class="math-error">${escapeHtml(expression)}</span>`;
+				}
+			}
+
 
 			function renderInlineMarkdown(content) {
 				let html = escapeHtml(content);
@@ -1359,8 +1382,24 @@ $$"
 							return `<pre><code>${escapeHtml(code)}</code></pre>`;
 						}
 
-						if (/^(?:\$\$[\s\S]*\$\$|\\\[[\s\S]*\\\])$/.test(value)) {
-							return `<div class="math-preview">${renderInlineMarkdown(value)}</div>`;
+						const displayMathMatch = value.match(/^\$\$([\s\S]*?)\$\$$/);
+						if (displayMathMatch) {
+							return `<div class="math-preview">${renderKatexHtml(displayMathMatch[1], true)}</div>`;
+						}
+
+						const bracketDisplayMatch = value.match(/^\\\[([\s\S]*?)\\\]$/);
+						if (bracketDisplayMatch) {
+							return `<div class="math-preview">${renderKatexHtml(bracketDisplayMatch[1], true)}</div>`;
+						}
+
+						const inlineMathMatch = value.match(/^\$([^$\n][\s\S]*?)\$$/);
+						if (inlineMathMatch) {
+							return `<span class="math-inline">${renderKatexHtml(inlineMathMatch[1], false)}</span>`;
+						}
+
+						const escapedInlineMathMatch = value.match(/^\\\((.*? )\\\)$/);
+						if (escapedInlineMathMatch) {
+							return `<span class="math-inline">${renderKatexHtml(escapedInlineMathMatch[1], false)}</span>`;
 						}
 
 						if (/^###\s+/.test(value)) {
