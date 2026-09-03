@@ -21,7 +21,7 @@ const rawFiles = import.meta.glob("../content/posts/*.md", {
 	eager: true,
 });
 
-const rawContents = {};
+	const rawContents: Record<string, string> = {};
 
 for (const [path, raw] of Object.entries(rawFiles)) {
 	const filename = path.split("/").pop();
@@ -304,6 +304,67 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 							<button type="button" data-formula-template="\hat{x},\bar{x},\tilde{x}">重音符号</button>
 							<button type="button" data-formula-template="\left( \frac{a}{b} \right)">自动括号</button>
 						</div>
+						<details class="greek-symbols" open>
+							<summary>希腊字母</summary>
+							<div class="greek-group">
+								<span>小写</span>
+								<div class="greek-grid">
+									<button type="button" title="\\alpha" data-greek-latex="\\alpha">α</button>
+									<button type="button" title="\\beta" data-greek-latex="\\beta">β</button>
+									<button type="button" title="\\gamma" data-greek-latex="\\gamma">γ</button>
+									<button type="button" title="\\delta" data-greek-latex="\\delta">δ</button>
+									<button type="button" title="\\epsilon" data-greek-latex="\\epsilon">ε</button>
+									<button type="button" title="\\varepsilon" data-greek-latex="\\varepsilon">ϵ</button>
+									<button type="button" title="\\zeta" data-greek-latex="\\zeta">ζ</button>
+									<button type="button" title="\\eta" data-greek-latex="\\eta">η</button>
+									<button type="button" title="\\theta" data-greek-latex="\\theta">θ</button>
+									<button type="button" title="\\vartheta" data-greek-latex="\\vartheta">ϑ</button>
+									<button type="button" title="\\iota" data-greek-latex="\\iota">ι</button>
+									<button type="button" title="\\kappa" data-greek-latex="\\kappa">κ</button>
+									<button type="button" title="\\lambda" data-greek-latex="\\lambda">λ</button>
+									<button type="button" title="\\mu" data-greek-latex="\\mu">μ</button>
+									<button type="button" title="\\nu" data-greek-latex="\\nu">ν</button>
+									<button type="button" title="\\xi" data-greek-latex="\\xi">ξ</button>
+									<button type="button" title="\\pi" data-greek-latex="\\pi">π</button>
+									<button type="button" title="\\varpi" data-greek-latex="\\varpi">ϖ</button>
+									<button type="button" title="\\rho" data-greek-latex="\\rho">ρ</button>
+									<button type="button" title="\\varrho" data-greek-latex="\\varrho">ϱ</button>
+									<button type="button" title="\\sigma" data-greek-latex="\\sigma">σ</button>
+									<button type="button" title="\\varsigma" data-greek-latex="\\varsigma">ς</button>
+									<button type="button" title="\\tau" data-greek-latex="\\tau">τ</button>
+									<button type="button" title="\\upsilon" data-greek-latex="\\upsilon">υ</button>
+									<button type="button" title="\\phi" data-greek-latex="\\phi">φ</button>
+									<button type="button" title="\\varphi" data-greek-latex="\\varphi">ϕ</button>
+									<button type="button" title="\\chi" data-greek-latex="\\chi">χ</button>
+									<button type="button" title="\\psi" data-greek-latex="\\psi">ψ</button>
+									<button type="button" title="\\omega" data-greek-latex="\\omega">ω</button>
+								</div>
+							</div>
+							<div class="greek-group">
+								<span>大写</span>
+								<div class="greek-grid">
+									<button type="button" title="\\Gamma" data-greek-latex="\\Gamma">Γ</button>
+									<button type="button" title="\\Delta" data-greek-latex="\\Delta">Δ</button>
+									<button type="button" title="\\Theta" data-greek-latex="\\Theta">Θ</button>
+									<button type="button" title="\\Lambda" data-greek-latex="\\Lambda">Λ</button>
+									<button type="button" title="\\Xi" data-greek-latex="\\Xi">Ξ</button>
+									<button type="button" title="\\Pi" data-greek-latex="\\Pi">Π</button>
+									<button type="button" title="\\Sigma" data-greek-latex="\\Sigma">Σ</button>
+									<button type="button" title="\\Upsilon" data-greek-latex="\\Upsilon">Υ</button>
+									<button type="button" title="\\Phi" data-greek-latex="\\Phi">Φ</button>
+									<button type="button" title="\\Psi" data-greek-latex="\\Psi">Ψ</button>
+									<button type="button" title="\\Omega" data-greek-latex="\\Omega">Ω</button>
+								</div>
+							</div>
+						</details>
+						<div class="math-palette" aria-label="数学符号面板">
+							<div class="math-palette-toolbar">
+								<div class="math-category-tabs" id="mathCategoryTabs" role="tablist" aria-label="数学分类"></div>
+								<input id="mathSearch" type="search" placeholder="搜索符号或 LaTeX 命令" aria-label="搜索数学符号" />
+							</div>
+							<div id="mathPaletteGrid" class="math-palette-grid"></div>
+							<p id="mathPaletteEmpty" class="math-palette-empty" hidden>没有找到匹配的数学符号。</p>
+						</div>
 						<div class="formula-editor-row">
 							<textarea id="formulaInput" rows="2" placeholder="例如：\frac{-b \pm \sqrt{b^2-4ac}}{2a}"></textarea>
 							<div id="formulaPreview" class="formula-preview" aria-live="polite">公式预览</div>
@@ -319,7 +380,7 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 					     编辑区域
 					================================ -->
 
-					<div class="editor-wrapper">
+					<div class="editor-wrapper split-editor">
 						<div
 							id="content"
 							class="content-editor"
@@ -353,7 +414,6 @@ $$"
 						<div
 							id="preview"
 							class="preview"
-							hidden
 						></div>
 					</div>
 
@@ -499,25 +559,6 @@ $$"
 					</div>
 				</section>
 
-				<!-- ================================
-				     独立预览区域
-				================================ -->
-
-				<section
-					class="preview-section"
-					id="previewSection"
-					hidden
-				>
-					<div class="preview-heading">
-						<span>文章预览</span>
-						<span>PREVIEW</span>
-					</div>
-
-					<div
-						id="fullPreview"
-						class="full-preview"
-					></div>
-				</section>
 			</section>
 		</main>
 
@@ -553,12 +594,6 @@ $$"
 
 			const preview =
 				document.querySelector("#preview");
-
-			const fullPreview =
-				document.querySelector("#fullPreview");
-
-			const previewSection =
-				document.querySelector("#previewSection");
 
 			const editTab =
 				document.querySelector("#editTab");
@@ -626,6 +661,21 @@ $$"
 			const insertFormula =
 				document.querySelector("#insertFormula");
 
+			const mathCategoryTabs =
+				document.querySelector("#mathCategoryTabs");
+
+			const mathPaletteGrid =
+				document.querySelector("#mathPaletteGrid");
+
+			const mathPaletteEmpty =
+				document.querySelector("#mathPaletteEmpty");
+
+			const mathSearch =
+				document.querySelector("#mathSearch");
+
+			const splitEditor =
+				document.querySelector(".split-editor");
+
 
 			// ========================================
 			// 编辑模式状态
@@ -670,7 +720,24 @@ $$"
 					const line = lines[index];
 					const trimmed = line.replace(/\u00a0/g, " ").trim();
 
-					if (trimmed === "$$" || trimmed === "\\[") {
+					if (trimmed.startsWith("```") || trimmed === "$$" || trimmed === "\\[") {
+						if (trimmed.startsWith("```")) {
+							const codeLines = [line];
+							index += 1;
+
+							while (index < lines.length) {
+								codeLines.push(lines[index]);
+								if (lines[index].trim() === "```") {
+									index += 1;
+									break;
+								}
+								index += 1;
+							}
+
+							blocks.push(codeLines.join("\n"));
+							continue;
+						}
+
 						const closingDelimiter = trimmed === "$$" ? "$$" : "\\]";
 						const formulaLines = [trimmed];
 						index += 1;
@@ -695,6 +762,26 @@ $$"
 					}
 
 					if (/^(?:#{1,6}\s|[-*]\s|\d+\.\s|>\s)/.test(trimmed)) {
+						if (/^(?:[-*]|\d+\.)\s/.test(trimmed)) {
+							const marker = /^\d+\./.test(trimmed) ? /^\d+\.\s/ : /^[-*]\s/;
+							const listLines = [trimmed];
+							index += 1;
+
+							while (index < lines.length && marker.test(lines[index].trim())) {
+								listLines.push(lines[index].trim());
+								index += 1;
+							}
+
+							blocks.push(listLines.join("\n"));
+							continue;
+						}
+
+						blocks.push(trimmed);
+						index += 1;
+						continue;
+					}
+
+					if (/^(?:---|\*\*\*|___)$/.test(trimmed)) {
 						blocks.push(trimmed);
 						index += 1;
 						continue;
@@ -1196,6 +1283,11 @@ $$"
 				);
 
 				html = html.replace(
+					/`([^`]+)`/g,
+					"<code>$1</code>"
+				);
+
+				html = html.replace(
 					/(?<!\*)\*(?!\*)(.*?)\*(?!\*)/g,
 					"<em>$1</em>"
 				);
@@ -1259,6 +1351,14 @@ $$"
 							return "";
 						}
 
+						if (/^```[\w-]*\n[\s\S]*```$/.test(value)) {
+							const code = value
+								.replace(/^```[\w-]*\n?/, "")
+								.replace(/\n?```$/, "");
+
+							return `<pre><code>${escapeHtml(code)}</code></pre>`;
+						}
+
 						if (/^(?:\$\$[\s\S]*\$\$|\\\[[\s\S]*\\\])$/.test(value)) {
 							return `<div class="math-preview">${renderInlineMarkdown(value)}</div>`;
 						}
@@ -1283,7 +1383,19 @@ $$"
 							return `<blockquote>${renderInlineMarkdown(quote)}</blockquote>`;
 						}
 
-						if (/^(?:[-*]\s+.*)(?:\n(?:[-*]\s+.*))+$/.test(value)) {
+						if (/^(?:\d+\.\s+.*)(?:\n\d+\.\s+.*)*$/.test(value)) {
+							const items = value
+								.split(/\n/)
+								.map((line) => line.replace(/^\d+\.\s+/, ""));
+
+							return `<ol>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ol>`;
+						}
+
+						if (/^(?:---|\*\*\*|___)$/.test(value)) {
+							return "<hr />";
+						}
+
+						if (/^(?:[-*]\s+.*)(?:\n(?:[-*]\s+.*))*$/.test(value)) {
 							const items = value
 								.split(/\n/)
 								.map((line) => line.trim())
@@ -1342,7 +1454,6 @@ $$"
 				};
 
 				window.renderMathInElement(preview, options);
-				window.renderMathInElement(fullPreview, options);
 			}
 
 
@@ -1358,6 +1469,7 @@ $$"
 			function renderFormulaEditorPreview() {
 				const formula = formulaInput.value.trim();
 				formulaPreview.textContent = "";
+				formulaPreview.classList.remove("formula-preview-error");
 
 				if (!formula) {
 					formulaPreview.textContent = "公式预览";
@@ -1365,23 +1477,131 @@ $$"
 				}
 
 				if (window.katex) {
-					window.katex.render(formula, formulaPreview, {
-						displayMode: false,
-						throwOnError: false,
-						trust: false,
-					});
+					try {
+						window.katex.render(formula, formulaPreview, {
+							displayMode: false,
+							throwOnError: true,
+							trust: false,
+						});
+					} catch (error) {
+						formulaPreview.classList.add("formula-preview-error");
+						formulaPreview.textContent = `公式错误：${error.message || "请检查 LaTeX"}`;
+					}
 				} else {
 					formulaPreview.textContent = formula;
 				}
 			}
 
+			const mathCategories = [
+				{
+					id: "greek", label: "希腊字母", items: [
+						["α", String.raw`\alpha`], ["β", String.raw`\beta`], ["γ", String.raw`\gamma`], ["δ", String.raw`\delta`], ["ε", String.raw`\epsilon`], ["ϵ", String.raw`\varepsilon`], ["ζ", String.raw`\zeta`], ["η", String.raw`\eta`], ["θ", String.raw`\theta`], ["ϑ", String.raw`\vartheta`], ["ι", String.raw`\iota`], ["κ", String.raw`\kappa`], ["λ", String.raw`\lambda`], ["μ", String.raw`\mu`], ["ν", String.raw`\nu`], ["ξ", String.raw`\xi`], ["π", String.raw`\pi`], ["ϖ", String.raw`\varpi`], ["ρ", String.raw`\rho`], ["ϱ", String.raw`\varrho`], ["σ", String.raw`\sigma`], ["ς", String.raw`\varsigma`], ["τ", String.raw`\tau`], ["υ", String.raw`\upsilon`], ["φ", String.raw`\phi`], ["ϕ", String.raw`\varphi`], ["χ", String.raw`\chi`], ["ψ", String.raw`\psi`], ["ω", String.raw`\omega`], ["Γ", String.raw`\Gamma`], ["Δ", String.raw`\Delta`], ["Θ", String.raw`\Theta`], ["Λ", String.raw`\Lambda`], ["Ξ", String.raw`\Xi`], ["Π", String.raw`\Pi`], ["Σ", String.raw`\Sigma`], ["Υ", String.raw`\Upsilon`], ["Φ", String.raw`\Phi`], ["Ψ", String.raw`\Psi`], ["Ω", String.raw`\Omega`],
+					],
+				},
+				{
+					id: "symbols", label: "常用符号", items: [["∞", String.raw`\infty`], ["±", String.raw`\pm`], ["∓", String.raw`\mp`], ["×", String.raw`\times`], ["÷", String.raw`\div`], ["·", String.raw`\cdot`], ["∘", String.raw`\circ`], ["∂", String.raw`\partial`], ["∇", String.raw`\nabla`], ["√", String.raw`\sqrt{□}`], ["∝", String.raw`\propto`]],
+				},
+				{
+					id: "relations", label: "关系符号", items: [["=", "="], ["≠", String.raw`\neq`], ["≈", String.raw`\approx`], ["≃", String.raw`\simeq`], ["≅", String.raw`\cong`], ["∼", String.raw`\sim`], ["<", "<"], [">", ">"], ["≤", String.raw`\le`], ["≥", String.raw`\ge`], ["≪", String.raw`\ll`], ["≫", String.raw`\gg`], ["∈", String.raw`\in`], ["∉", String.raw`\notin`], ["⊂", String.raw`\subset`], ["⊆", String.raw`\subseteq`], ["⊃", String.raw`\supset`], ["⊇", String.raw`\supseteq`], ["∥", String.raw`\parallel`], ["⊥", String.raw`\perp`]],
+				},
+				{
+					id: "sets", label: "集合逻辑", items: [["∅", String.raw`\emptyset`], ["∪", String.raw`\cup`], ["∩", String.raw`\cap`], ["∀", String.raw`\forall`], ["∃", String.raw`\exists`], ["∄", String.raw`\nexists`], ["¬", String.raw`\neg`], ["∧", String.raw`\land`], ["∨", String.raw`\lor`], ["⇒", String.raw`\Rightarrow`], ["⇔", String.raw`\Leftrightarrow`], ["→", String.raw`\to`], ["↔", String.raw`\leftrightarrow`]],
+				},
+				{
+					id: "calculus", label: "微积分", items: [["∫", String.raw`\int_{a}^{b} f(x)\,dx`], ["∬", String.raw`\iint_{D}`], ["∭", String.raw`\iiint_{V}`], ["∮", String.raw`\oint_C`], ["d/dx", String.raw`\frac{d}{dx}`], ["∂/∂x", String.raw`\frac{\partial}{\partial x}`], ["极限", String.raw`\lim_{x\to a} f(x)`], ["级数", String.raw`\sum_{n=1}^{\infty} a_n`], ["乘积", String.raw`\prod_{n=1}^{\infty}`], ["余积", String.raw`\coprod_{i=1}^{n}`], ["并集运算", String.raw`\bigcup_{i=1}^{n}`], ["交集运算", String.raw`\bigcap_{i=1}^{n}`], ["析取", String.raw`\bigvee_{i=1}^{n}`], ["合取", String.raw`\bigwedge_{i=1}^{n}`]],
+				},
+				{
+					id: "linear", label: "线性代数", items: [["向量", String.raw`\mathbf{v}`], ["点积", String.raw`\mathbf{v}\cdot\mathbf{w}`], ["范数", String.raw`\left\|□\right\|`], ["矩阵 2×2", String.raw`\begin{pmatrix}a&b\\c&d\end{pmatrix}`], ["行列式", String.raw`\det(A)`], ["转置", String.raw`A^{T}`], ["黑板粗体 R", String.raw`\mathbb{R}`], ["黑板粗体 N", String.raw`\mathbb{N}`], ["黑板粗体 Z", String.raw`\mathbb{Z}`], ["黑板粗体 Q", String.raw`\mathbb{Q}`], ["黑板粗体 C", String.raw`\mathbb{C}`], ["直立微分", String.raw`\mathrm{d}`]],
+				},
+				{
+					id: "functions", label: "函数记号", items: [["sin", String.raw`\sin`], ["cos", String.raw`\cos`], ["tan", String.raw`\tan`], ["log", String.raw`\log`], ["ln", String.raw`\ln`], ["exp", String.raw`\exp`], ["max", String.raw`\max`], ["min", String.raw`\min`], ["sup", String.raw`\sup`], ["inf", String.raw`\inf`], ["lim", String.raw`\lim`], ["arg max", String.raw`\operatorname{arg\,max}`], ["arg min", String.raw`\operatorname{arg\,min}`]],
+				},
+				{
+					id: "arrows", label: "箭头", items: [["→", String.raw`\rightarrow`], ["←", String.raw`\leftarrow`], ["↔", String.raw`\leftrightarrow`], ["⇒", String.raw`\Rightarrow`], ["⇐", String.raw`\Leftarrow`], ["⇔", String.raw`\Leftrightarrow`], ["↦", String.raw`\mapsto`], ["长右箭头", String.raw`\longrightarrow`], ["长左箭头", String.raw`\longleftarrow`], ["长双箭头", String.raw`\Longleftrightarrow`]],
+				},
+				{
+					id: "structures", label: "结构模板", items: [["分数", String.raw`\frac{□}{□}`], ["根式", String.raw`\sqrt{□}`], ["n 次根", String.raw`\sqrt[n]{□}`], ["上标", String.raw`x^{□}`], ["下标", String.raw`x_{□}`], ["上下标", String.raw`x_{□}^{□}`], ["绝对值", String.raw`\left|□\right|`], ["范数", String.raw`\left\|□\right\|`], ["括号", String.raw`\left(□\right)`], ["方括号", String.raw`\left[□\right]`], ["大括号", String.raw`\left\{□\right\}`], ["重音", String.raw`\hat{x}`], ["花体", String.raw`\mathcal{F}`], ["手写体", String.raw`\mathscr{F}`]],
+				},
+				{
+					id: "matrices", label: "矩阵", items: [["pmatrix 2×2", String.raw`\begin{pmatrix}□&□\\□&□\end{pmatrix}`], ["pmatrix 3×3", String.raw`\begin{pmatrix}□&□&□\\□&□&□\\□&□&□\end{pmatrix}`], ["pmatrix 4×4", String.raw`\begin{pmatrix}□&□&□&□\\□&□&□&□\\□&□&□&□\\□&□&□&□\end{pmatrix}`], ["bmatrix", String.raw`\begin{bmatrix}a&b\\c&d\end{bmatrix}`], ["Bmatrix", String.raw`\begin{Bmatrix}a&b\\c&d\end{Bmatrix}`], ["vmatrix", String.raw`\begin{vmatrix}a&b\\c&d\end{vmatrix}`], ["Vmatrix", String.raw`\begin{Vmatrix}a&b\\c&d\end{Vmatrix}`]],
+				},
+			];
+
+			let activeMathCategory = "greek";
+
+			function insertFormulaTemplate(template) {
+				const firstPlaceholder = template.indexOf("□");
+				const text = template.replaceAll("□", "");
+				const start = formulaInput.selectionStart ?? formulaInput.value.length;
+				const end = formulaInput.selectionEnd ?? start;
+				formulaInput.setRangeText(text, start, end, "end");
+				const cursor = start + (firstPlaceholder < 0 ? text.length : firstPlaceholder);
+				formulaInput.setSelectionRange(cursor, cursor);
+				renderFormulaEditorPreview();
+				formulaInput.focus();
+			}
+
+			function renderMathPalette() {
+				const query = mathSearch.value.trim().toLowerCase();
+				const category = mathCategories.find((item) => item.id === activeMathCategory);
+				const sourceItems = query ? mathCategories.flatMap((item) => item.items) : (category?.items || []);
+				const items = sourceItems.filter(([label, latex]) => !query || `${label} ${latex}`.toLowerCase().includes(query));
+				mathCategoryTabs.innerHTML = mathCategories.map((item) => `<button type="button" class="math-category-tab${item.id === activeMathCategory ? " active" : ""}" data-math-category="${item.id}">${item.label}</button>`).join("");
+				mathPaletteGrid.innerHTML = items.map(([label, latex]) => `<button type="button" class="math-palette-button" title="${escapeHtml(latex)}" data-math-latex="${escapeHtml(latex)}"><span>${escapeHtml(label)}</span><small>${escapeHtml(latex)}</small></button>`).join("");
+				mathPaletteEmpty.hidden = items.length > 0;
+			}
+
+			mathCategoryTabs.addEventListener("click", (event) => {
+				const tab = event.target.closest("[data-math-category]");
+				if (tab) {
+					activeMathCategory = tab.dataset.mathCategory;
+					renderMathPalette();
+				}
+			});
+
+			mathPaletteGrid.addEventListener("click", (event) => {
+				const button = event.target.closest("[data-math-latex]");
+				if (button) {
+					insertFormulaTemplate(button.dataset.mathLatex || "");
+				}
+			});
+
+			mathSearch.addEventListener("input", renderMathPalette);
+			renderMathPalette();
+
 
 			formulaInput.addEventListener("input", renderFormulaEditorPreview);
+			formulaInput.addEventListener("keydown", (event) => {
+				if (event.key !== "Tab") {
+					return;
+				}
+
+				const cursor = formulaInput.selectionStart ?? 0;
+				const nextPlaceholder = formulaInput.value.indexOf("{}", cursor);
+				if (nextPlaceholder < 0) {
+					return;
+				}
+
+				event.preventDefault();
+				formulaInput.setSelectionRange(nextPlaceholder + 1, nextPlaceholder + 1);
+			});
+
+			function insertFormulaTextAtCursor(text) {
+				const start = formulaInput.selectionStart ?? formulaInput.value.length;
+				const end = formulaInput.selectionEnd ?? start;
+				formulaInput.setRangeText(text, start, end, "end");
+				renderFormulaEditorPreview();
+				formulaInput.focus();
+			}
+
+			document.querySelectorAll("[data-greek-latex]").forEach((button) => {
+				button.addEventListener("click", () => {
+					insertFormulaTextAtCursor(button.dataset.greekLatex || "");
+				});
+			});
 			document.querySelectorAll("[data-formula-template]").forEach((button) => {
 				button.addEventListener("click", () => {
-					formulaInput.value = button.dataset.formulaTemplate || "";
-					renderFormulaEditorPreview();
-					formulaInput.focus();
+					insertFormulaTemplate(button.dataset.formulaTemplate || "");
 				});
 			});
 
@@ -1413,26 +1633,18 @@ $$"
 
 				preview.innerHTML = html;
 
-				fullPreview.innerHTML =
-					html;
-
 				retryPreviewMath();
 			}
 
+			content.addEventListener("input", renderPreview);
+
 			window.addEventListener("load", renderPreviewMath, { once: true });
+			window.addEventListener("load", renderPreview, { once: true });
 
 
 			function showPreview() {
 				renderPreview();
-
-				// 编辑区保持显示，预览放在正文下方
-				content.hidden = false;
-
-				// 保留编辑器内部的备用预览，但不占用布局
-				preview.hidden = true;
-
-				// 显示下面的大预览
-				previewSection.hidden = false;
+				splitEditor.classList.add("is-previewing");
 
 				editTab.classList.remove(
 					"active"
@@ -1442,22 +1654,11 @@ $$"
 					"active"
 				);
 
-				// 滚动到下面的预览
-				setTimeout(() => {
-					previewSection.scrollIntoView({
-						behavior: "smooth",
-						block: "start",
-					});
-				}, 50);
 			}
 
 
 			function showEditor() {
-				content.hidden = false;
-
-				preview.hidden = true;
-
-				previewSection.hidden = true;
+				splitEditor.classList.remove("is-previewing");
 
 				previewTab.classList.remove(
 					"active"
@@ -3055,9 +3256,233 @@ $$"
 		font-size: 12px;
 	}
 
+	.greek-symbols {
+		margin: 8px 0;
+		border-top: 1px solid #e5e5e0;
+		padding-top: 8px;
+	}
+
+	.formula-editor > .formula-templates,
+	.formula-editor > .greek-symbols {
+		display: none;
+	}
+
+	.math-palette {
+		margin: 8px 0;
+		padding: 8px;
+		border: 1px solid #e5e5e0;
+		border-radius: 6px;
+		background: #fdfdfb;
+	}
+
+	.math-palette-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.math-category-tabs {
+		display: flex;
+		gap: 3px;
+		min-width: 0;
+		overflow-x: auto;
+		padding-bottom: 2px;
+		white-space: nowrap;
+	}
+
+	.math-category-tab {
+		flex: 0 0 auto;
+		padding: 6px 9px;
+		border: 0;
+		border-radius: 5px;
+		background: transparent;
+		color: #777;
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	.math-category-tab:hover,
+	.math-category-tab.active {
+		background: #ecece8;
+		color: #111;
+	}
+
+	#mathSearch {
+		flex: 0 1 190px;
+		min-width: 130px;
+		height: 32px;
+		padding: 0 9px;
+		font-size: 12px;
+	}
+
+	.math-palette-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+		gap: 5px;
+		max-height: 170px;
+		margin-top: 8px;
+		overflow-y: auto;
+	}
+
+	.math-palette-button {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 5px;
+		min-width: 0;
+		min-height: 32px;
+		padding: 4px 7px;
+		border: 1px solid #dededb;
+		border-radius: 5px;
+		background: #fff;
+		color: #333;
+		cursor: pointer;
+	}
+
+	.math-palette-button:hover {
+		border-color: #999;
+		background: #f3f3f0;
+	}
+
+	.math-palette-button span {
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 16px;
+		white-space: nowrap;
+	}
+
+	.math-palette-button small {
+		min-width: 0;
+		overflow: hidden;
+		color: #999;
+		font-family: monospace;
+		font-size: 9px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.math-palette-empty {
+		margin: 10px 2px 2px;
+		color: #999;
+		font-size: 12px;
+		text-align: center;
+	}
+
+	.formula-preview-error {
+		color: #a33;
+		font-size: 12px;
+		line-height: 1.5;
+		text-align: left;
+	}
+
+	.greek-symbols summary {
+		color: #555;
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	.greek-group {
+		display: grid;
+		grid-template-columns: 36px minmax(0, 1fr);
+		gap: 8px;
+		align-items: start;
+		margin-top: 9px;
+		color: #888;
+		font-size: 11px;
+	}
+
+	.greek-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+		gap: 5px;
+	}
+
+	.greek-grid button {
+		min-width: 0;
+		height: 30px;
+		padding: 0 4px;
+		border: 1px solid #dededb;
+		border-radius: 5px;
+		background: #fff;
+		color: #333;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 17px;
+		cursor: pointer;
+	}
+
+	.greek-grid button:hover {
+		border-color: #999;
+		background: #f3f3f0;
+	}
+
+	.split-editor {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 0;
+		align-items: stretch;
+		border: 1px solid #dededb;
+		border-radius: 9px;
+		background: #fff;
+		overflow: hidden;
+	}
+
+	.split-editor .content-editor,
+	.split-editor .preview {
+		min-width: 0;
+		min-height: 620px;
+		max-height: 760px;
+		height: 680px;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+		overflow: auto;
+	}
+
+	.split-editor .content-editor {
+		border-right: 1px solid #e1e1de;
+	}
+
+	.split-editor .preview {
+		padding: 27px 30px;
+		background: rgba(255, 255, 253, 0.94);
+	}
+
+	.split-editor .preview:empty::before {
+		content: "预览会显示在这里";
+		color: #aaa;
+	}
+
 	@media (max-width: 600px) {
 		.formula-editor-row {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 760px) {
+		.split-editor {
+			display: block;
+			border: 0;
+			overflow: visible;
+		}
+
+		.split-editor .content-editor,
+		.split-editor .preview {
+			height: 600px;
+			max-height: none;
+			border: 1px solid #dededb;
+			border-radius: 9px;
+		}
+
+		.split-editor .preview {
+			display: none;
+		}
+
+		.split-editor.is-previewing .content-editor {
+			display: none;
+		}
+
+		.split-editor.is-previewing .preview {
+			display: block;
 		}
 	}
 
