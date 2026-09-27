@@ -1,4 +1,4 @@
-# TSY Blog Worker v3 — 部署说明
+# TSY Blog Worker v4 — 部署说明
 
 写作后台 `src/pages/write.astro` 会请求：
 
@@ -8,7 +8,9 @@
 | `/upload` | POST | 上传图片 |
 | `/posts/update` | POST | 更新已有文章 |
 | `/posts/delete` | POST | 删除文章 |
-| `/version` | GET | 确认已部署 v3 |
+| `/projects/aegis-agent` | GET / POST | 读取 / 保存 Aegis Agent 独立论文稿 |
+| `/projects/upload` | POST | 上传 Aegis Agent 项目图片 |
+| `/version` | GET | 确认已部署 v4 |
 
 线上旧 Worker **只处理发布和传图**。编辑 / 删除会打到 `/posts/update`、`/posts/delete`，旧代码返回纯文本 `Not Found`，页面就会报网络或接口失败。
 
@@ -34,4 +36,8 @@ npx wrangler deploy
 
 https://tsy-blog-api.1468709192.workers.dev/version
 
-应看到 JSON：`"version": 3`。如果仍是纯文本 `TSY Blog API is running.`，说明还是旧版，编辑/删除不会好。
+应看到 JSON：`"version": 4`，并列出 Aegis 项目接口。若要让写作后台的项目编辑器读取和保存，必须部署此版 Worker；GitHub Pages 前端还需单独构建部署。
+
+项目稿保存在 `src/content/projects/aegis-agent.md`，项目图片保存在 `public/images/projects/aegis-agent/`。编辑入口位于 `/write/projects/aegis-agent/`，登录共用普通写作后台的浏览器登录状态。
+
+首次启用 Aegis 项目写入前，必须在 `worker/` 目录运行 `npx wrangler secret put AEGIS_WRITE_TOKEN` 设置独立项目写入凭据；编辑器不会将此凭据保存到 localStorage。项目读取公开，项目稿保存和图片上传均要求该凭据。普通文章接口使用既有写入策略，不受该项目凭据改变。

@@ -1,5 +1,5 @@
 /**
- * TSY Blog Worker v3
+ * TSY Blog Worker v4
  *
  * 必须整份部署到 Cloudflare Worker「tsy-blog-api」。
  * 线上旧版只认识 POST / 和 POST /upload，对编辑/删除会返回纯文本
@@ -27,11 +27,12 @@
 const GITHUB_API = "https://api.github.com";
 const POSTS_DIR = "src/content/posts";
 const IMAGES_DIR = "public/images";
-const VERSION = 3;
+const PROJECT_FILE = "src/content/projects/aegis-agent.md";
+const VERSION = 4;
 
 const CORS = {
 	"Access-Control-Allow-Origin": "*",
-	"Access-Control-Allow-Headers": "Content-Type, X-Write-Token",
+	"Access-Control-Allow-Headers": "Content-Type, X-Write-Token, X-Project-Write-Token",
 	"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 	"Access-Control-Max-Age": "86400",
 };
@@ -82,21 +83,33 @@ async function route(request, env) {
 			return json({
 				success: true,
 				version: VERSION,
-				message: "TSY Blog API v3",
+				message: "TSY Blog API v4",
 				routes: [
 					"POST /",
 					"POST /upload",
 					"POST /posts/update",
 					"POST /posts/delete",
+					"GET /projects/aegis-agent",
+					"POST /projects/aegis-agent",
+					"POST /projects/upload",
 					"GET /version",
 				],
 			});
+		}
+		if (path === "/projects/aegis-agent") {
+			return getProject(env);
 		}
 
 		return health();
 	}
 
 	if (method === "POST" || method === "PUT") {
+		if (path === "/projects/aegis-agent") {
+			return saveProject(request, env);
+		}
+		if (path === "/projects/upload") {
+			return uploadProjectImage(request, env);
+		}
 		if (path === "/") {
 			return createPost(request, env);
 		}
@@ -127,6 +140,41 @@ async function route(request, env) {
 		},
 		404
 	);
+}
+
+async function getProject(env) {
+	const response = await githubRequest(env, PROJECT_FILE, { method: "GET" }, true);
+	if (response.status === 404) return json({ success: false, message: "项目稿尚未创建。" }, 404);
+	if (!response.ok) throw await githubError(response, "读取项目稿失败");
+	const file = await response.json();
+	if (!file.content) throw new Error("GitHub 返回的项目稿内容为空。");
+	const bytes = Uint8Array.from(atob(file.content.replace(/\s/g, "")), (c) => c.charCodeAt(0));
+	return json({ success: true, content: new TextDecoder().decode(bytes), sha: file.sha });
+}
+
+async function saveProject(request, env) {
+	if (!checkProjectWriteToken(request, env)) return json({ success: false, message: "Aegis 项目写入凭据未配置或不正确。请在 Worker 设置 AEGIS_WRITE_TOKEN，并在编辑器中输入相同凭据。" }, env.AEGIS_WRITE_TOKEN ? 401 : 503);
+	const body = await readJson(request);
+	if (typeof body.content !== "string" || !body.content.trim()) return json({ success: false, message: "项目正文不能为空。" }, 400);
+	if (body.content.length > 1_000_000) return json({ success: false, message: "项目稿超过 1 MB 限制。" }, 413);
+	if (!body.content.startsWith("---\n") || !body.content.includes("\ntitle:")) return json({ success: false, message: "项目稿缺少有效 frontmatter；请保留开头元数据。" }, 400);
+	const existing = await getFile(env, PROJECT_FILE);
+	if (!existing) return json({ success: false, message: "项目文件不存在，无法更新。" }, 404);
+	await commitFile(env, { path: PROJECT_FILE, content: normalizeMarkdownContent(body.content), sha: existing.sha, message: `Update Aegis Agent project${body.revision ? `: ${String(body.revision).slice(0, 100)}` : ""}` });
+	return json({ success: true, message: "Aegis Agent 项目稿已保存。" });
+}
+
+async function uploadProjectImage(request, env) {
+	if (!checkProjectWriteToken(request, env)) return json({ success: false, message: "Aegis 项目写入凭据未配置或不正确。" }, env.AEGIS_WRITE_TOKEN ? 401 : 503);
+	const contentType = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+	const ext = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" }[contentType];
+	if (!ext) return json({ success: false, message: "支持 JPG / PNG / GIF / WebP 图片。" }, 400);
+	const bytes = await request.arrayBuffer();
+	if (!bytes.byteLength || bytes.byteLength > 10 * 1024 * 1024) return json({ success: false, message: "图片必须大于 0 且不超过 10 MB。" }, 400);
+	const name = `${Date.now()}-${randomSuffix(8)}.${ext}`;
+	await commitBinary(env, { path: `public/images/projects/aegis-agent/${name}`, bytes, message: `Upload Aegis Agent figure: ${name}` });
+	const siteBase = (env.SITE_BASE || "https://tsy20031016.github.io/eccentric-eclipse").replace(/\/?$/, "");
+	return json({ success: true, url: `${siteBase}/images/projects/aegis-agent/${name}` });
 }
 
 function health() {
@@ -445,6 +493,10 @@ function checkWriteToken(request, env) {
 	}
 
 	return request.headers.get("X-Write-Token") === env.WRITE_TOKEN;
+}
+
+function checkProjectWriteToken(request, env) {
+	return Boolean(env.AEGIS_WRITE_TOKEN) && request.headers.get("X-Project-Write-Token") === env.AEGIS_WRITE_TOKEN;
 }
 
 function validateFilename(filename) {

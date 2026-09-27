@@ -123,6 +123,11 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 					<p class="intro-text">
 						把脑子里的东西写下来。
 					</p>
+
+					<a class="project-workspace-link" href="/eccentric-eclipse/write/projects/aegis-agent/">
+						<span><small>独立项目工作区</small><strong>Aegis Agent · 论文编辑</strong><em>企业级 Agent 执行系统</em></span>
+						<span aria-hidden="true">↗</span>
+					</a>
 				</div>
 
 				<!-- ================================
@@ -2638,6 +2643,29 @@ $$"
 
 		font-size: 14px;
 	}
+
+	.project-workspace-link {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 20px;
+		width: min(520px, 100%);
+		margin-top: 26px;
+		padding: 16px 18px;
+		border: 1px solid #dededb;
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.78);
+		color: #222;
+		text-decoration: none;
+		transition: border-color 0.2s ease, transform 0.2s ease;
+	}
+
+	.project-workspace-link:hover { border-color: #aaa; transform: translateY(-1px); }
+	.project-workspace-link > span:first-child { display: grid; gap: 5px; }
+	.project-workspace-link small { color: #999; font-size: 10px; letter-spacing: 0.12em; }
+	.project-workspace-link strong { font-size: 14px; font-weight: 600; }
+	.project-workspace-link em { color: #777; font-size: 12px; font-style: normal; }
+	.project-workspace-link > span:last-child { color: #888; font-size: 18px; }
 
 
 	/* ========================================
