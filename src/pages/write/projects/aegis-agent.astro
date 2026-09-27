@@ -29,6 +29,19 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 		const coreSections=new Set(['overview','abstract','architecture','full']);
 		let activeSection=docSection.value;
 		const authHeaders=()=>({'Content-Type':'application/json','X-Project-Write-Token':document.querySelector('#projectToken').value});
+		function prepareProjectDocument(raw,title){
+			const normalized=String(raw||'').replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+			const match=normalized.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/);
+			let metadata=match?match[1]:'';
+			let body=match?normalized.slice(match[0].length):normalized.replace(/^---[ \t]*\n/,'');
+			const fields={title,description:title||'Aegis Agent 项目文档',status:'active'};
+			for(const [name,value] of Object.entries(fields)){
+				const line=new RegExp(`^${name}\\s*:[^\\n]*$`,'m');
+				if(line.test(metadata))metadata=metadata.replace(line,`${name}: ${JSON.stringify(value)}`);
+				else metadata+=(metadata?'\n':'')+`${name}: ${JSON.stringify(value)}`;
+			}
+			return `---\n${metadata}\n---\n\n${body.replace(/^\n+/, '')}`;
+		}
 		const escapeHtml=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 		const inline=(value)=>String(value).split(/(<span style="color:#[\da-f]{6};font-size:\d+px">[\s\S]*?<\/span>)/gi).map(part=>{const styled=part.match(/^<span style="color:(#[\da-f]{6});font-size:(\d+)px">([\s\S]*)<\/span>$/i);if(styled)return `<span style="color:${styled[1]};font-size:${styled[2]}px">${inline(styled[3])}</span>`;return escapeHtml(part).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g,'<em>$1</em>');}).join('');
 		const parsePipeRow=(line)=>line.trim().replace(/^\|/,'').replace(/\|$/,'').split(/(?<!\\)\|/).map(cell=>cell.trim().replace(/\\\|/g,'|'));
@@ -55,11 +68,7 @@ const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 				const projectToken=document.querySelector('#projectToken').value;
 				if(!projectToken)throw Error('请先输入 Cloudflare Worker 的 AEGIS_WRITE_TOKEN');
 				const title=String(document.querySelector('#docTitle').value||'Aegis Agent').trim();
-				const frontmatter=source.value.match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
-				if(!frontmatter)throw Error('没有找到完整的 YAML Frontmatter（请保留开头和结尾的 ---）');
-				if(!/^title\s*:/m.test(frontmatter[2]))throw Error('Frontmatter 中缺少 title 字段');
-				const updatedMetadata=frontmatter[2].replace(/^title\s*:\s*.*$/m,`title: ${JSON.stringify(title)}`);
-				const content=`${frontmatter[1]}${updatedMetadata}${frontmatter[3]}${source.value.slice(frontmatter[0].length)}`;
+				const content=prepareProjectDocument(source.value,title);
 				const r=await fetch(projectEndpoint(),{method:'POST',headers:{'Content-Type':'application/json','X-Project-Write-Token':projectToken},body:JSON.stringify({content,title,revision:document.querySelector('#revision').value})});
 				const j=await r.json();if(!r.ok||!j.success)throw Error(j.message||`HTTP ${r.status}`);
 				source.value=content;localStorage.setItem(draftKey(),content);source.dispatchEvent(new Event('input'));message.textContent='✓ 当前项目文档已保存，GitHub Pages 正在构建';
