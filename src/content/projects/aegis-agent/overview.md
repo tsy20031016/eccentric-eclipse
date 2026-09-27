@@ -1,5 +1,5 @@
 ---
-title: 项目说明
+title: "Aegis Agent — 企业级 Agent 执行系统"
 description: Aegis Agent 的定位、问题范围与设计目标。
 status: active
 ---
