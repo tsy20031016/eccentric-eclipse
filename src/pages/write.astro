@@ -738,7 +738,8 @@ $$"
 							continue;
 						}
 
-						const closingDelimiter = trimmed === "$$" ? "$$" : "\\]";
+						const isBracketMath = trimmed === "\\[";
+						const closingDelimiter = isBracketMath ? "\\]" : "$$";
 						const formulaLines = [trimmed];
 						index += 1;
 
@@ -752,7 +753,15 @@ $$"
 							}
 						}
 
-						blocks.push(formulaLines.join("\n"));
+						if (
+							isBracketMath &&
+							formulaLines.at(-1)?.trim() === closingDelimiter
+						) {
+							const expression = formulaLines.slice(1, -1).join("\n");
+							blocks.push("$" + "$\n" + expression + "\n" + "$$");
+						} else {
+							blocks.push(formulaLines.join("\n"));
+						}
 						continue;
 					}
 
