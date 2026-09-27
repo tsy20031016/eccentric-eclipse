@@ -3,8 +3,9 @@ import { getCollection, render } from "astro:content";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 
 const entries = await getCollection("projects", ({ id }) => id.startsWith("aegis-agent/"));
-export function getStaticPaths() {
-	return ["overview", "abstract", "architecture"].map((section) => ({ params: { section } }));
+export async function getStaticPaths() {
+	const documents = await getCollection("projects", ({ id }) => id.startsWith("aegis-agent/"));
+	return documents.map((document) => ({ params: { section: document.id.split("/").at(-1) } }));
 }
 const entry = entries.find((item) => item.id === `aegis-agent/${Astro.params.section}`);
 if (!entry) throw new Error(`Missing Aegis section: ${Astro.params.section}`);

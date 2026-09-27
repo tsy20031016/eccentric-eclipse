@@ -3,12 +3,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 
 const documents = await getCollection("projects", ({ id }) => id.startsWith("aegis-agent/"));
-const cards = [
-	{ slug: "overview", title: "项目说明", subtitle: "目标、定位与研究范围", description: "了解 Aegis Agent 要解决的问题、设计边界与研究目标。" },
-	{ slug: "abstract", title: "摘要", subtitle: "研究问题与主要贡献", description: "集中查看研究背景、方法、结论与关键词。" },
-	{ slug: "architecture", title: "系统架构", subtitle: "组件、流程与治理机制", description: "深入阅读系统组件划分、执行生命周期与可靠性设计。" },
-];
-const summaries = Object.fromEntries(documents.map((entry) => [entry.id.split("/").at(-1)?.replace(/\.md$/, ""), entry]));
+const order = ["overview", "abstract", "architecture"];
+const subtitles: Record<string, string> = { overview: "目标、定位与研究范围", abstract: "研究问题与主要贡献", architecture: "组件、流程与治理机制" };
+const cards = documents.sort((a, b) => {
+	const aSlug = a.id.split("/").at(-1) || "";
+	const bSlug = b.id.split("/").at(-1) || "";
+	return (order.indexOf(aSlug) < 0 ? 99 : order.indexOf(aSlug)) - (order.indexOf(bSlug) < 0 ? 99 : order.indexOf(bSlug)) || a.data.title.localeCompare(b.data.title, "zh-CN");
+});
 ---
 
 <BaseLayout title="Aegis Agent · TSY" description="Aegis Agent 企业级 Agent 执行系统研究项目。">
@@ -20,10 +21,10 @@ const summaries = Object.fromEntries(documents.map((entry) => [entry.id.split("/
 		<p class="intro">Aegis Agent 聚焦 Agent 在企业环境中的可靠执行、权限治理、失败恢复与可观测性。这里是项目入口；详细内容按主题拆分，便于阅读、持续维护和独立编辑。</p>
 		<div class="meta"><span>研究项目 · 持续更新</span><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>项目工作区 →</a></div>
 		<section class="cards" aria-label="项目文档">
-			{cards.map((card, index) => {
-				const entry = summaries[card.slug];
-				return <a class="card" href={`${import.meta.env.BASE_URL}/projects/aegis-agent/${card.slug}/`}>
-					<span class="number">0{index + 1}</span><div><p>{card.subtitle}</p><h2>{card.title}</h2><span class="description">{entry?.data.description || card.description}</span></div><span class="arrow">↗</span>
+			{cards.map((document, index) => {
+				const slug = document.id.split("/").at(-1) || "";
+				return <a class="card" href={`${import.meta.env.BASE_URL}/projects/aegis-agent/${slug}/`}>
+					<span class="number">{String(index + 1).padStart(2, "0")}</span><div><p>{subtitles[slug] || "项目章节"}</p><h2>{document.data.title}</h2><span class="description">{document.data.description}</span></div><span class="arrow">↗</span>
 				</a>;
 			})}
 		</section>

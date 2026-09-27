@@ -1,5 +1,5 @@
 /**
- * TSY Blog Worker v5
+ * TSY Blog Worker v6
  *
  * 必须整份部署到 Cloudflare Worker「tsy-blog-api」。
  * 线上旧版只认识 POST / 和 POST /upload，对编辑/删除会返回纯文本
@@ -33,7 +33,7 @@ const PROJECT_DOCUMENTS = {
 	abstract: "src/content/projects/aegis-agent/abstract.md",
 	architecture: "src/content/projects/aegis-agent/architecture.md",
 };
-const VERSION = 5;
+const VERSION = 6;
 
 const CORS = {
 	"Access-Control-Allow-Origin": "*",
@@ -88,7 +88,7 @@ async function route(request, env) {
 			return json({
 				success: true,
 				version: VERSION,
-				message: "TSY Blog API v5",
+				message: "TSY Blog API v6",
 				routes: [
 					"POST /",
 					"POST /upload",
@@ -98,6 +98,9 @@ async function route(request, env) {
 					"POST /projects/aegis-agent",
 					"GET /projects/aegis-agent/overview|abstract|architecture",
 					"POST /projects/aegis-agent/overview|abstract|architecture",
+					"GET /projects/aegis-agent/documents",
+					"POST /projects/aegis-agent/documents",
+					"DELETE /projects/aegis-agent/documents/:slug",
 					"POST /projects/upload",
 					"GET /version",
 				],
@@ -106,6 +109,7 @@ async function route(request, env) {
 		if (path === "/projects/aegis-agent") {
 			return getProject(env);
 		}
+		if (path === "/projects/aegis-agent/documents") return listProjectDocuments(env);
 		const projectDocument = getProjectDocumentPath(path);
 		if (projectDocument) return getProject(env, projectDocument);
 
@@ -113,6 +117,7 @@ async function route(request, env) {
 	}
 
 	if (method === "POST" || method === "PUT") {
+		if (path === "/projects/aegis-agent/documents") return createProjectDocument(request, env);
 		if (path === "/projects/aegis-agent") {
 			return saveProject(request, env);
 		}
@@ -137,9 +142,10 @@ async function route(request, env) {
 			return deletePost(request, env);
 		}
 	}
-
-	if (method === "DELETE" && (path === "/posts/delete" || path === "/delete")) {
-		return deletePost(request, env);
+	if (method === "DELETE") {
+		const match = path.match(/^\/projects\/aegis-agent\/documents\/([a-z0-9][a-z0-9-]{0,59})$/);
+		if (match) return deleteProjectDocument(request, env, match[1]);
+		if (path === "/posts/delete" || path === "/delete") return deletePost(request, env);
 	}
 
 	return json(
@@ -154,8 +160,51 @@ async function route(request, env) {
 }
 
 function getProjectDocumentPath(path) {
-	const match = path.match(/^\/projects\/aegis-agent\/(overview|abstract|architecture)$/);
-	return match ? PROJECT_DOCUMENTS[match[1]] : null;
+	const match = path.match(/^\/projects\/aegis-agent\/([a-z0-9][a-z0-9-]{0,59})$/);
+	if (!match || match[1] === "documents") return null;
+	return PROJECT_DOCUMENTS[match[1]] || `src/content/projects/aegis-agent/${match[1]}.md`;
+}
+
+async function listProjectDocuments(env) {
+	const response = await githubRequest(env, "src/content/projects/aegis-agent", { method: "GET" }, true);
+	if (response.status === 404) return json({ success: true, documents: [] });
+	if (!response.ok) throw await githubError(response, "读取项目章节列表失败");
+	const files = await response.json();
+	const documents = [];
+	for (const file of files) {
+		if (file.type !== "file" || !/^[a-z0-9][a-z0-9-]{0,59}\.md$/.test(file.name)) continue;
+		const slug = file.name.slice(0, -3);
+		const contentResponse = await githubRequest(env, `src/content/projects/aegis-agent/${file.name}`, { method: "GET" }, true);
+		if (!contentResponse.ok) continue;
+		const data = await contentResponse.json();
+		const content = data.content ? new TextDecoder().decode(Uint8Array.from(atob(data.content.replace(/\s/g, "")), (c) => c.charCodeAt(0))) : "";
+		const title = content.match(/^title:\s*(?:"((?:[^"\\]|\\.)*)"|'([^']*)'|(.*))\s*$/m);
+		documents.push({ slug, title: title ? (title[1] ? JSON.parse(`"${title[1]}"`) : title[2] || title[3].trim()) : slug });
+	}
+	documents.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
+	return json({ success: true, documents });
+}
+
+async function createProjectDocument(request, env) {
+	if (!checkProjectWriteToken(request, env)) return json({ success: false, message: "Aegis 项目写入凭据未配置或不正确。" }, env.AEGIS_WRITE_TOKEN ? 401 : 503);
+	const body = await readJson(request);
+	const title = String(body.title || "").trim();
+	if (!title || title.length > 120) return json({ success: false, message: "章节标题不能为空且不能超过 120 个字符。" }, 400);
+	const slug = `chapter-${Date.now()}-${randomSuffix(4)}`;
+	const path = `src/content/projects/aegis-agent/${slug}.md`;
+	const content = `---\ntitle: ${yamlString(title)}\ndescription: ${yamlString(body.description || title)}\nstatus: active\n---\n\n## ${title.replace(/[\r\n]/g, " ")}\n\n在此开始撰写本章节。\n`;
+	await commitFile(env, { path, content, message: `Add Aegis Agent chapter: ${title.slice(0, 80)}` });
+	return json({ success: true, slug, title, message: "项目章节已创建，网站正在构建。" });
+}
+
+async function deleteProjectDocument(request, env, slug) {
+	if (!checkProjectWriteToken(request, env)) return json({ success: false, message: "Aegis 项目写入凭据未配置或不正确。" }, env.AEGIS_WRITE_TOKEN ? 401 : 503);
+	if (PROJECT_DOCUMENTS[slug]) return json({ success: false, message: "项目核心文档不能删除。" }, 400);
+	const path = `src/content/projects/aegis-agent/${slug}.md`;
+	const existing = await getFile(env, path);
+	if (!existing) return json({ success: false, message: "章节不存在或已删除。" }, 404);
+	await deleteFile(env, { path, sha: existing.sha, message: `Delete Aegis Agent chapter: ${slug}` });
+	return json({ success: true, message: "章节已删除，网站正在重新构建。" });
 }
 
 async function getProject(env, filePath = PROJECT_FILE) {
