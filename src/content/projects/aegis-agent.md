@@ -1,5 +1,5 @@
 ---
-title: Aegis Agent
+title: "Aegis Agent — 企业级 Agent 执行系统"
 description: 企业级 Agent 执行系统：面向可靠执行、治理与可观测性的研究项目。
 status: active
 ---
