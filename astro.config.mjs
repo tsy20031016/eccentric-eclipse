@@ -18,10 +18,18 @@ function rehypeLatexDelimiters() {
 					.trim();
 				const isMath = /(?:\\[a-zA-Z]+|[_^=])/.test(text);
 
-				if (text.startsWith('[') && text.endsWith(']') && isMath) {
-					node.tagName = 'div';
-					node.properties = { className: ['math-display'] };
-					node.children = [{ type: 'text', value: text.slice(1, -1).trim() }];
+				const displayMatch = text.match(/^\\\[([\s\S]*?)\\\]$/) ||
+					(text.startsWith('[') && text.endsWith(']') ? [text, text.slice(1, -1)] : null);
+
+				if (displayMatch && isMath) {
+					node.tagName = 'pre';
+					node.properties = {};
+					node.children = [{
+						type: 'element',
+						tagName: 'code',
+						properties: { className: ['language-math', 'math-display'] },
+						children: [{ type: 'text', value: displayMatch[1].trim() }],
+					}];
 					return;
 				}
 
@@ -40,11 +48,13 @@ function rehypeLatexDelimiters() {
 						if (match.index > lastIndex) {
 							children.push({ type: 'text', value: child.value.slice(lastIndex, match.index) });
 						}
-						children.push({ type: 'element', tagName: 'span', properties: { className: ['math-inline'] }, children: [{ type: 'text', value: match[1] }] });
+						children.push({ type: 'element', tagName: 'code', properties: { className: ['language-math', 'math-inline'] }, children: [{ type: 'text', value: match[1] }] });
 						lastIndex = match.index + match[0].length;
 					}
 
-					children.push({ type: 'text', value: child.value.slice(lastIndex) });
+					if (lastIndex < child.value.length) {
+						children.push({ type: 'text', value: child.value.slice(lastIndex) });
+					}
 				}
 				node.children = children;
 			}

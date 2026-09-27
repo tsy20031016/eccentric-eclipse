@@ -47,17 +47,17 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 
 		<link
 			rel="stylesheet"
-			href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
+			href="https://cdn.jsdelivr.net/npm/katex@0.18.4/dist/katex.min.css"
 		/>
 
 		<script
 			defer
-			src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
+			src="https://cdn.jsdelivr.net/npm/katex@0.18.4/dist/katex.min.js"
 		></script>
 
 		<script
 			defer
-			src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
+			src="https://cdn.jsdelivr.net/npm/katex@0.18.4/dist/contrib/auto-render.min.js"
 		></script>
 	</head>
 
@@ -1397,7 +1397,7 @@ $$"
 							return `<span class="math-inline">${renderKatexHtml(inlineMathMatch[1], false)}</span>`;
 						}
 
-						const escapedInlineMathMatch = value.match(/^\\\((.*? )\\\)$/);
+						const escapedInlineMathMatch = value.match(/^\\\(([\s\S]*?)\\\)$/);
 						if (escapedInlineMathMatch) {
 							return `<span class="math-inline">${renderKatexHtml(escapedInlineMathMatch[1], false)}</span>`;
 						}
