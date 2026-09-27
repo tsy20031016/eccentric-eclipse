@@ -1,5 +1,5 @@
 /**
- * TSY Blog Worker v4
+ * TSY Blog Worker v5
  *
  * 必须整份部署到 Cloudflare Worker「tsy-blog-api」。
  * 线上旧版只认识 POST / 和 POST /upload，对编辑/删除会返回纯文本
@@ -33,7 +33,7 @@ const PROJECT_DOCUMENTS = {
 	abstract: "src/content/projects/aegis-agent/abstract.md",
 	architecture: "src/content/projects/aegis-agent/architecture.md",
 };
-const VERSION = 4;
+const VERSION = 5;
 
 const CORS = {
 	"Access-Control-Allow-Origin": "*",
@@ -88,7 +88,7 @@ async function route(request, env) {
 			return json({
 				success: true,
 				version: VERSION,
-				message: "TSY Blog API v4",
+				message: "TSY Blog API v5",
 				routes: [
 					"POST /",
 					"POST /upload",
@@ -96,6 +96,8 @@ async function route(request, env) {
 					"POST /posts/delete",
 					"GET /projects/aegis-agent",
 					"POST /projects/aegis-agent",
+					"GET /projects/aegis-agent/overview|abstract|architecture",
+					"POST /projects/aegis-agent/overview|abstract|architecture",
 					"POST /projects/upload",
 					"GET /version",
 				],
