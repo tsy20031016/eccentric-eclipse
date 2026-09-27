@@ -6,7 +6,7 @@ status: "active"
 
 S1:用户问题十维解构规范（Enterprise Query Decomposition Taxonomy）
 
-$$x \;\longmapsto\; \big(D_1,\,D_2,\,D_3,\,D_4,\,D_5,\,D_6,\,D_7,\,D_8,\,D_9,\,D_{10}\big)$$
+
 
 | 维度 | 名称 | 数学对象 | 取值/判据 |
 | --- | --- | --- | --- |
@@ -41,4 +41,3 @@ $$x \;\longmapsto\; \{c_1, \dots, c_m\} \;\longmapsto\; \big(\text{Tag}(c_1), \d
 
 级联顺序的原则是先做便宜且信息量大的检测，把明显情况尽早筛掉：
 
-$$\text{元请求过滤} \;\to\; \text{子句切分（=组合意图检测）} \;\to\; \text{意图分布估计（=单义/可枚举多义）} \;\to\; \text{溯因散度检测（=隐性意图）}$$
