@@ -1,0 +1,27 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+
+const entries = await getCollection("projects", ({ id }) => id.startsWith("aegis-agent/"));
+export function getStaticPaths() {
+	return ["overview", "abstract", "architecture"].map((section) => ({ params: { section } }));
+}
+const entry = entries.find((item) => item.id === `aegis-agent/${Astro.params.section}`);
+if (!entry) throw new Error(`Missing Aegis section: ${Astro.params.section}`);
+const { Content } = await render(entry);
+const projectBase = `${import.meta.env.BASE_URL}/projects/aegis-agent/`;
+---
+
+<BaseLayout title={`${entry.data.title} · Aegis Agent`} description={entry.data.description}>
+	<article class="document">
+		<nav><a href={projectBase}>← Aegis Agent</a><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>项目工作区 →</a></nav>
+		<p class="eyebrow">AEGIS AGENT · PROJECT DOCUMENT</p>
+		<h1>{entry.data.title}</h1><p class="lead">{entry.data.description}</p>
+		<hr /><div class="body"><Content /></div>
+		<footer><a href={projectBase}>返回项目主页</a><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>编辑项目文档</a></footer>
+	</article>
+</BaseLayout>
+
+<style>
+	.document{width:min(820px,calc(100% - 40px));margin:0 auto;padding:48px 0 100px;color:#222}.document nav,.document footer{display:flex;justify-content:space-between;gap:16px}.document nav a,.document footer a{color:#666;text-decoration:none;font-size:13px}.eyebrow{margin:62px 0 16px;color:#888;font:11px monospace;letter-spacing:.15em}h1{margin:0;font:400 clamp(42px,8vw,64px)/1.12 Georgia,serif;letter-spacing:-.04em}.lead{color:#777;font-size:16px;line-height:1.8}hr{border:0;border-top:1px solid #e4e4dd;margin:34px 0 45px}.body{font-size:16px;line-height:1.95}.body :global(h2){margin:42px 0 14px;font:400 27px Georgia,serif}.body :global(h3){margin:30px 0 10px;font-size:19px}.body :global(p){margin:0 0 19px}.body :global(ul),.body :global(ol){padding-left:1.5em}.body :global(li){margin:8px 0}.body :global(blockquote){margin:20px 0;padding:10px 18px;border-left:3px solid #ccc;color:#777}.body :global(.katex-display){overflow-x:auto;overflow-y:hidden}.body :global(table){width:100%;border-collapse:collapse}.body :global(th),.body :global(td){border:1px solid #ddd;padding:8px 10px;vertical-align:top}.body :global(img){max-width:100%;height:auto}footer{margin-top:58px;padding-top:18px;border-top:1px solid #e4e4dd}
+</style>

@@ -28,6 +28,11 @@ const GITHUB_API = "https://api.github.com";
 const POSTS_DIR = "src/content/posts";
 const IMAGES_DIR = "public/images";
 const PROJECT_FILE = "src/content/projects/aegis-agent.md";
+const PROJECT_DOCUMENTS = {
+	overview: "src/content/projects/aegis-agent/overview.md",
+	abstract: "src/content/projects/aegis-agent/abstract.md",
+	architecture: "src/content/projects/aegis-agent/architecture.md",
+};
 const VERSION = 4;
 
 const CORS = {
@@ -99,6 +104,8 @@ async function route(request, env) {
 		if (path === "/projects/aegis-agent") {
 			return getProject(env);
 		}
+		const projectDocument = getProjectDocumentPath(path);
+		if (projectDocument) return getProject(env, projectDocument);
 
 		return health();
 	}
@@ -107,6 +114,8 @@ async function route(request, env) {
 		if (path === "/projects/aegis-agent") {
 			return saveProject(request, env);
 		}
+		const projectDocument = getProjectDocumentPath(path);
+		if (projectDocument) return saveProject(request, env, projectDocument);
 		if (path === "/projects/upload") {
 			return uploadProjectImage(request, env);
 		}
@@ -142,8 +151,13 @@ async function route(request, env) {
 	);
 }
 
-async function getProject(env) {
-	const response = await githubRequest(env, PROJECT_FILE, { method: "GET" }, true);
+function getProjectDocumentPath(path) {
+	const match = path.match(/^\/projects\/aegis-agent\/(overview|abstract|architecture)$/);
+	return match ? PROJECT_DOCUMENTS[match[1]] : null;
+}
+
+async function getProject(env, filePath = PROJECT_FILE) {
+	const response = await githubRequest(env, filePath, { method: "GET" }, true);
 	if (response.status === 404) return json({ success: false, message: "项目稿尚未创建。" }, 404);
 	if (!response.ok) throw await githubError(response, "读取项目稿失败");
 	const file = await response.json();
@@ -152,15 +166,15 @@ async function getProject(env) {
 	return json({ success: true, content: new TextDecoder().decode(bytes), sha: file.sha });
 }
 
-async function saveProject(request, env) {
+async function saveProject(request, env, filePath = PROJECT_FILE) {
 	if (!checkProjectWriteToken(request, env)) return json({ success: false, message: "Aegis 项目写入凭据未配置或不正确。请在 Worker 设置 AEGIS_WRITE_TOKEN，并在编辑器中输入相同凭据。" }, env.AEGIS_WRITE_TOKEN ? 401 : 503);
 	const body = await readJson(request);
 	if (typeof body.content !== "string" || !body.content.trim()) return json({ success: false, message: "项目正文不能为空。" }, 400);
 	if (body.content.length > 1_000_000) return json({ success: false, message: "项目稿超过 1 MB 限制。" }, 413);
 	if (!body.content.startsWith("---\n") || !body.content.includes("\ntitle:")) return json({ success: false, message: "项目稿缺少有效 frontmatter；请保留开头元数据。" }, 400);
-	const existing = await getFile(env, PROJECT_FILE);
+	const existing = await getFile(env, filePath);
 	if (!existing) return json({ success: false, message: "项目文件不存在，无法更新。" }, 404);
-	await commitFile(env, { path: PROJECT_FILE, content: normalizeMarkdownContent(body.content), sha: existing.sha, message: `Update Aegis Agent project${body.revision ? `: ${String(body.revision).slice(0, 100)}` : ""}` });
+	await commitFile(env, { path: filePath, content: normalizeMarkdownContent(body.content), sha: existing.sha, message: `Update Aegis Agent project${body.revision ? `: ${String(body.revision).slice(0, 100)}` : ""}` });
 	return json({ success: true, message: "Aegis Agent 项目稿已保存。" });
 }
 

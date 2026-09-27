@@ -1,28 +1,36 @@
 ---
-import { getEntry, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
 
-const project = await getEntry("projects", "aegis-agent");
-const { Content } = await render(project);
+const documents = await getCollection("projects", ({ id }) => id.startsWith("aegis-agent/"));
+const cards = [
+	{ slug: "overview", title: "项目说明", subtitle: "目标、定位与研究范围", description: "了解 Aegis Agent 要解决的问题、设计边界与研究目标。" },
+	{ slug: "abstract", title: "摘要", subtitle: "研究问题与主要贡献", description: "集中查看研究背景、方法、结论与关键词。" },
+	{ slug: "architecture", title: "系统架构", subtitle: "组件、流程与治理机制", description: "深入阅读系统组件划分、执行生命周期与可靠性设计。" },
+];
+const summaries = Object.fromEntries(documents.map((entry) => [entry.id.split("/").at(-1)?.replace(/\.md$/, ""), entry]));
 ---
 
-<BaseLayout title="Aegis Agent · TSY" description={project.data.description}>
-	<article class="project-paper">
+<BaseLayout title="Aegis Agent · TSY" description="Aegis Agent 企业级 Agent 执行系统研究项目。">
+	<main class="hub">
 		<a class="back" href={`${import.meta.env.BASE_URL}/projects/`}>← 全部项目</a>
 		<p class="eyebrow">RESEARCH PROJECT · ENTERPRISE AGENT SYSTEM</p>
-		<h1>{project.data.title}</h1>
-		<p class="lead">{project.data.description}</p>
-		<div class="paper-meta"><span>研究稿 · 持续更新</span><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>打开项目编辑器 →</a></div>
-		<hr />
-		<div class="paper-body"><Content /></div>
-	</article>
+		<h1>Aegis Agent</h1>
+		<p class="lead">企业级 Agent 执行系统研究项目</p>
+		<p class="intro">Aegis Agent 聚焦 Agent 在企业环境中的可靠执行、权限治理、失败恢复与可观测性。这里是项目入口；详细内容按主题拆分，便于阅读、持续维护和独立编辑。</p>
+		<div class="meta"><span>研究项目 · 持续更新</span><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>项目工作区 →</a></div>
+		<section class="cards" aria-label="项目文档">
+			{cards.map((card, index) => {
+				const entry = summaries[card.slug];
+				return <a class="card" href={`${import.meta.env.BASE_URL}/projects/aegis-agent/${card.slug}/`}>
+					<span class="number">0{index + 1}</span><div><p>{card.subtitle}</p><h2>{card.title}</h2><span class="description">{entry?.data.description || card.description}</span></div><span class="arrow">↗</span>
+				</a>;
+			})}
+		</section>
+		<p class="note">具体章节会在对应子页面中展开；资料仍在整理的部分会明确标注为待补充。</p>
+	</main>
 </BaseLayout>
 
 <style>
-	.project-paper{width:min(820px,calc(100% - 40px));margin:0 auto;padding:55px 0 110px;color:#222}
-	.back{color:#777;text-decoration:none;font-size:13px}.eyebrow{margin:54px 0 16px;color:#888;font:11px monospace;letter-spacing:.16em}
-	h1{margin:0;font:400 clamp(42px,8vw,68px)/1.1 Georgia,serif;letter-spacing:-.04em}.lead{max-width:650px;color:#666;font-size:18px;line-height:1.8}
-	.paper-meta{display:flex;justify-content:space-between;gap:16px;margin:30px 0;color:#999;font-size:13px}.paper-meta a{color:#333;text-decoration:none}
-	hr{border:0;border-top:1px solid #e4e4dd;margin:34px 0 46px}.paper-body{font-size:16px;line-height:1.95}.paper-body :global(h2){margin:44px 0 15px;font:400 28px Georgia,serif}.paper-body :global(h3){margin:30px 0 10px;font-size:19px}.paper-body :global(p){margin:0 0 20px}.paper-body :global(blockquote){margin:20px 0;padding:10px 18px;border-left:3px solid #ccc;color:#777}.paper-body :global(li){margin:8px 0}
-	.paper-body :global(.katex-display){overflow-x:auto;overflow-y:hidden}.paper-body :global(table){width:100%;margin:22px 0;border-collapse:collapse;font-size:14px;line-height:1.65}.paper-body :global(th){background:#f2f2ee}.paper-body :global(th),.paper-body :global(td){border:1px solid #d8d8d1;padding:9px 11px;vertical-align:top}.paper-body :global(tbody tr:nth-child(even)){background:#fafaf7}.paper-body :global(img){max-width:100%;height:auto}
+	.hub{width:min(900px,calc(100% - 40px));margin:0 auto;padding:48px 0 110px;color:#222}.back{color:#777;text-decoration:none;font-size:13px}.eyebrow{margin:64px 0 16px;color:#888;font:11px monospace;letter-spacing:.16em}h1{margin:0;font:400 clamp(46px,8vw,76px)/1.08 Georgia,serif;letter-spacing:-.045em}.lead{margin:20px 0 0;font-size:21px;color:#555}.intro{max-width:680px;margin:22px 0;color:#777;font-size:16px;line-height:1.9}.meta{display:flex;justify-content:space-between;margin:30px 0 44px;padding-bottom:18px;border-bottom:1px solid #e4e4dd;color:#999;font-size:13px}.meta a{color:#333;text-decoration:none}.cards{border-top:1px solid #e4e4dd}.card{display:grid;grid-template-columns:58px 1fr 28px;gap:18px;align-items:start;padding:25px 8px;border-bottom:1px solid #e4e4dd;color:inherit;text-decoration:none;transition:background .2s,padding .2s}.card:hover{padding-left:15px;background:#f5f5f0}.number{padding-top:5px;color:#aaa;font:12px monospace}.card p{margin:0 0 8px;color:#999;font-size:12px}.card h2{margin:0 0 8px;font:400 27px Georgia,serif}.description{color:#666;font-size:14px;line-height:1.75}.arrow{color:#999}.note{margin-top:24px;color:#999;font-size:12px}@media(max-width:600px){.hub{padding-top:30px}.eyebrow{margin-top:48px}.card{grid-template-columns:34px 1fr 20px;gap:10px}.card h2{font-size:23px}}
 </style>
