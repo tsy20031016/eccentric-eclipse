@@ -4,6 +4,7 @@ description: "Aegis Agent — 企业级 Agent 执行系统"
 status: "active"
 ---
 
+<span style="color:#222222;font-size:20px">用户问题解构流程：</span>
 S1:用户问题十维解构规范（Enterprise Query Decomposition Taxonomy）
 
 $$x \;\longmapsto\; \big(D_1,\,D_2,\,D_3,\,D_4,\,D_5,\,D_6,\,D_7,\,D_8,\,D_9,\,D_{10}\big)$$
