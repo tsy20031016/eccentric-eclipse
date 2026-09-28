@@ -33,16 +33,6 @@ $$D_1 \to D_8 \to D_7 \to \{D_2,D_3,D_4,D_5,D_6\} \to D_9,D_{10}$$
 
 
 现考虑D1：意图确定性
-一、设计原则：必须是级联，不能是并行五分类
-
-这五类不是互斥的分类标签，而是可以叠加的属性标记。一个组合意图里的某个子句完全可以同时带有隐性意图。所以正确的架构目标不是"给 $x$ 贴一个标签"，而是：
-
-$$x \;\longmapsto\; \{c_1, \dots, c_m\} \;\longmapsto\; \big(\text{Tag}(c_1), \dots, \text{Tag}(c_m)\big)$$
-
-先把 $x$ 分解成若干原子子句，再对每个子句独立打标签。而"分解"这一步本身，就是组合意图检测；分解之后每个子句再各自过一遍"消歧+溯因"的检测链。
-
-级联顺序的原则是先做便宜且信息量大的检测，把明显情况尽早筛掉：
-$$\text{元请求过滤} \;\to\; \text{子句切分（=组合意图检测）} \;\to\; \text{意图分布估计（=单义/可枚举多义）} \;\to\; \text{溯因散度检测（=隐性意图）}$$
 
 D1架构图：
 ![System Architecture Diagram For intent Determinism Detection.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790589069822-w7r2ub09.png)
