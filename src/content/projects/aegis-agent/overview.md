@@ -44,7 +44,7 @@ $$x \;\longmapsto\; \{c_1, \dots, c_m\} \;\longmapsto\; \big(\text{Tag}(c_1), \d
 级联顺序的原则是先做便宜且信息量大的检测，把明显情况尽早筛掉：
 $$\text{元请求过滤} \;\to\; \text{子句切分（=组合意图检测）} \;\to\; \text{意图分布估计（=单义/可枚举多义）} \;\to\; \text{溯因散度检测（=隐性意图）}$$
 
-架构图：
+D1架构图：
 ![System Architecture Diagram For intent Determinism Detection.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790589069822-w7r2ub09.png)
 
 
