@@ -93,3 +93,7 @@ AUTHORIZATION_PERMISSION_POLICY_PATH=policies/examples/permissions.json
 - 策略故障、模型故障均收敛为 indeterminate，不会默认放行。
 - D8 属于计划前粗粒度检查，结果固定要求计划展开后再次做资源级权限复检。
 - 当前作为独立模块交付，尚未接入现有 Agent 主请求链。
+
+D8架构图：
+
+![D8架构diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790614594478-aw6b1asc.png)
