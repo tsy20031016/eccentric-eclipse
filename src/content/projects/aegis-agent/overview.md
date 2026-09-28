@@ -54,6 +54,8 @@ Query IR
 
 现考虑D1：意图确定性
 
+
+
 D1架构图：
 ![System Architecture Diagram For intent Determinism Detection.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790589069822-w7r2ub09.png)
 
@@ -64,13 +66,18 @@ D1架构图：
 
 可信主体 PrincipalContext
         ↓
+
 静态企业红线预检
+
         ↓
 LLM 提取 AccessClaim（不参与授权）
+
         ↓
 结构化企业红线复检
+
         ↓
 确定性企业权限策略裁决
+
         ↓
 允许 / 剪枝 / 澄清 / 拒绝 / 无法判定
 
