@@ -52,17 +52,18 @@ D10 单/多智能体执行形态定稿
 Query IR
 
 
-现考虑D1：意图确定性
+## 现考虑D1：意图确定性
 
 
 
-D1架构图：
+## D1架构图：
+
 ![System Architecture Diagram For intent Determinism Detection.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790589069822-w7r2ub09.png)
 
 
 
 
-考虑D8：(D8设计为独立架构，需要额外接入请求链)
+## 考虑D8：(D8设计为独立架构，需要额外接入请求链)
 
 可信主体 PrincipalContext
         ↓
@@ -101,7 +102,7 @@ AUTHORIZATION_PERMISSION_POLICY_PATH=policies/examples/permissions.json
 - D8 属于计划前粗粒度检查，结果固定要求计划展开后再次做资源级权限复检。
 - 当前作为独立模块交付，尚未接入现有 Agent 主请求链。
 
-D8架构图：
+## D8架构图：
 
 ![D8架构diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790614594478-aw6b1asc.png)
 
@@ -150,4 +151,9 @@ D8 结果带有 `allowed_capabilities`、`denied_capabilities`、`pruned_capabil
 **待接入**：可信认证边界、Query Compiler 的硬顺序、计划后节点级 D8/D7 复检、审批人身份和批准状态的服务端验证、LangGraph `interrupt()` / `Command(resume=...)`、以及跨重启等待审批所需的持久化 checkpointer。执行节点必须在确认和复检之后才产生副作用。
 
 代码入口：[风险服务](../app/risk/service.py)、[策略协议](../app/risk/protocols.py)、[静态策略适配器](../app/risk/policy.py)、[待审契约](../app/risk/approval.py)。实施与验收记录见 [S16](S16_d7_preplan_risk.md) 和 [S17](S17_d7_policy_approval_contract.md)。
+
+## D7架构图：
+
+
+![D7-diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790632079998-p43uxd5y.png)
 
