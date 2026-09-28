@@ -10,4 +10,23 @@ status: "active"
 
 ## 逻辑组件
 
+1. 交互与接入域
+英文：Experience & Access
 
+2. 理解与决策域
+英文：Understanding & Decision
+
+3. Agent 执行核心
+英文：Agent Runtime
+
+4. 能力与数据服务域
+英文：Capabilities & Data Services
+
+5. 可观测与质量域
+英文：Observability & Quality
+
+6. 学习与优化域
+英文：Learning & Optimization
+
+7. 共享基础平台
+英文：Shared Foundation
