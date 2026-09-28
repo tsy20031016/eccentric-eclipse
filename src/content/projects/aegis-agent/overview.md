@@ -57,5 +57,36 @@ Query IR
 D1架构图：
 ![System Architecture Diagram For intent Determinism Detection.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790589069822-w7r2ub09.png)
 
+考虑D8：
 
+可信主体 PrincipalContext
+        ↓
+静态企业红线预检
+        ↓
+LLM 提取 AccessClaim（不参与授权）
+        ↓
+结构化企业红线复检
+        ↓
+确定性企业权限策略裁决
+        ↓
+允许 / 剪枝 / 澄清 / 拒绝 / 无法判定
 
+两个可独立替换的企业子程序：
+
+- EnterpriseRedlinePrecheck
+  - 静态企业红线预检
+  - 支持原始请求检查和结构化语义复检
+- PermissionPolicyAdjudicator
+  - 确定性企业权限策略裁决
+  - 显式拒绝优先、默认拒绝、跨租户显式授权、组合请求部分剪枝
+
+AUTHORIZATION_REDLINE_POLICY_PATH=policies/examples/redlines.json
+AUTHORIZATION_PERMISSION_POLICY_PATH=policies/examples/permissions.json
+
+安全边界
+
+- 主体身份只能来自可信认证系统，不能从用户文本或 session_id 推断。
+- LLM 只能提取访问声明，输出授权字段会被严格拒绝。
+- 策略故障、模型故障均收敛为 indeterminate，不会默认放行。
+- D8 属于计划前粗粒度检查，结果固定要求计划展开后再次做资源级权限复检。
+- 当前作为独立模块交付，尚未接入现有 Agent 主请求链。
