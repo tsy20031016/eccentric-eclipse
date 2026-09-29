@@ -259,3 +259,47 @@ S18 已实现独立的 D2 模型、LLM 证据提取器、范围门控、裁决�
 
 
 ![D2-diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790656335585-mvb11hdt.png)
+
+
+
+## D3 信息闭合性：架构思路
+
+# 1. D3 回答的问题
+
+D2 判断“这类问题怎样求解”，D3 判断“求解所需的信息是否已在输入中；若不在，预计从哪里获取”。D3 **不实际获取数据**，也不保证目录中的数据一定存在、最新或足以回答。它把必要信息拆成逐项 `InformationNeed`，再确定性汇总为：
+
+- `closed_in_input`：所有已识别需求都来自任务本身或已提供的可用正文；
+- `retrieval_required`：已识别需要从允许的、目录可定位的来源获取信息；
+- `indeterminate`：需求证据、来源、授权范围、连接器或时效要求无法可靠确认；
+- `not_applicable`：D8 未放行或 D7 不适用。
+
+信息源类型为 `input_intrinsic`、`input_content`、`private_static`、`private_realtime`、`public_external`、`unknown`。公开外部来源补足了原始四项分类中“查公开网页/汇率”这一空缺。跨系统不是一种单项来源：`cross_system` 表示目录确认了两个以上不同系统；`heterogeneous` 进一步表示这些系统的数据类型或格式不同。每项来源仍保留原始类型。
+
+## 2. 输入边界与先行门控
+
+D3 与 D2 共享 `ScopedProblem`：文本应是上游可信编译器从 D8 已允许的任务分支中剪出的片段，能力键必须属于 D8 允许集合。D3 对照 D7 后果清单核对范围，拒绝使用被剪枝或拒绝的能力。D7 `human_review` 允许继续做只读分类，但不会因此放行工具执行。
+
+`InformationContext` 另携带 `ProvidedContent`：内容 ID 和实际可用正文。`ProvidedContent.from_input_content()` 只接受 S10 已解析且正文非空的 `InputContent`。当前 `InputAttachment` 只有文件名、MIME 等元数据，不能用来证明信息已经提供。上游仍须负责把可供该任务使用的内容筛选后交给 D3；D3 无法仅凭文本校验语义剪枝或内容级授权。Query Compiler 尚未接线，此处是明确的数据契约。
+
+## 3. 模型提取需求，目录核实来源
+
+可替换的 `InformationNeedExtractor` 只输出信息需求 ID、任务原文证据、需求模式、可选正文 ID 或任务原文中的来源线索，以及是否要求当前信息。默认 LLM 适配器复用项目 OpenAI Compatible 配置。解析器要求严格 JSON、1–24 项需求、唯一需求 ID、已知字段、原文中的证据和来源线索；引用的正文 ID 必须确实在 `InformationContext` 中。模型不输出目录存在性、授权结论或连接器可用性。
+
+`SourceCatalogResolver` 是可信元数据目录协议。当前 `StaticSourceCatalogResolver` 从版本化 JSON 装配，按明确别名查候选；D3 再用 D8 的 `RequestedAccess` 校验动作、资源类型、能力键和声明的来源系统。未命中、多个候选、未经授权或目录缺连接器时保持未决。目录版本在一次判定过程中变化也返回未决。示例目录位于 `policies/examples/information_sources.json`：知识库连接器是当前已有的 `search_knowledge`，ERP、CRM 和公开搜索条目故意没有连接器，不能被误报为可直接取数。
+
+## 4. 聚合与时效边界
+
+每个 `ResolvedNeed` 保存来源类型、来源与系统 ID、能力键、输入内容 ID、当前性要求和原因码。只要任一项未决，整体为 `indeterminate`，同时保留其余已确认的需求；全部只需输入时才是 `closed_in_input`，否则为 `retrieval_required`。结果记录来源目录版本、跨系统与异构标记，以及固定的执行前复检要求。
+
+如果任务要求当前数据却只匹配到静态文档，或者只引用了无法证明当前性的上传正文，D3 返回未决。对于实时或公开外部目录条目，D3 只记录当前性要求；真正的数据时间戳、缓存有效期和重取策略由后续获取流程与 D9 决定。模型也可能错误地把缺少的数据标为 `intrinsic`，或者错误地认为一段正文满足需求；结构化校验只能约束证据形式，语义准确率还需标注数据评测。
+
+## 5. 现状与下一步
+
+S19 已完成独立模块、可替换来源目录、严格证据解析、确定性授权/风险范围核对与离线验收。它未接入主 Agent 请求链，不主动访问 RAG、数据库、网页或其他系统；目录中的连接器 ID 也不是数据可用性的运行时证明。下一步应由可信 Query Compiler 提供已剪枝文本和已授权输入内容，再把 D2、D3 结果合入 Query IR；后续检索和 D6 验证才能确定答案是否真正有依据。
+
+代码入口：[模型](../app/information_closure/models.py)、[证据提取](../app/information_closure/extractor.py)、[来源目录](../app/information_closure/catalog.py)、[分类服务](../app/information_closure/service.py)、[装配点](../app/information_closure/runtime.py)。实施记录见 [S19](S19_d3_information_closure.md)。
+
+## D3架构图：
+
+
+![D3-diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790658814729-tkfc5s3c.png)
