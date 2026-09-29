@@ -254,3 +254,8 @@ D2 判断任务的**主要计算目标**，为后续求解器或规划方式选�
 S18 已实现独立的 D2 模型、LLM 证据提取器、范围门控、裁决器及离线测试。当前没有接入主 Agent 请求链，没有生产样本准确率或在线成本基线。下一步可在可信认证与 Query Compiler 接线后，为六类建立人工标注的开发/测试集，评估语义准确率与“定义不足”的召回率，再与 D3 的信息需求结果联合生成 Query IR。
 
 代码入口：[领域模型](../app/problem_type/models.py)、[证据提取](../app/problem_type/extractor.py)、[分类服务](../app/problem_type/service.py)、[运行时装配](../app/problem_type/runtime.py)。验收记录见 [S18](S18_d2_problem_type.md)。
+
+## D2架构图：
+
+
+![D2-diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790656335585-mvb11hdt.png)
