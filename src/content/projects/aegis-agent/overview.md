@@ -404,5 +404,50 @@ D4 先保证节点/边证据有原文依据，普通流程无环，反馈有界�
 
 
 
+## D6可验证性：架构思路
+
+## 1. D6 回答的问题
+
+D6 位于 D4/D5 之后、计划后 D8/D7 复检之前。它回答：**每个已知任务节点要交付什么、哪些必要断言可以检查、可用什么可信验证器、该检查最多能证明什么**。D6 不把“整份任务可信”压成一个平均分，也不把“验证器存在”误报为“产出已经通过”。
+
+一项任务可以同时包含强、弱、主观和未决的检查。例如“报告标题准确”可强验证一个明确的字面约束，“报告引用了所需数据”只能弱验证引用存在，“我喜欢这种风格”应交给用户验收。即使前两项通过，也不能推导出整份报告事实正确或用户满意。
+
+## 2. 输入与上游约束
+
+`VerificationContext` 携带 D8 剪枝后的 `StructureContext`、经 D4 校验的 `TaskTopology` 和 D5 的 `StructureCertainty`。D6 再次核对 D8 允许能力、D7 后果清单、D2 充分性、D3 信息需求、D4 图证据，以及 D5 结果与图是否一致。未放行返回 `not_applicable`；范围冲突、上游未决或伪造的图/确定性组合返回 `indeterminate`。D7 的 `human_review` 仍可继续只读规划，但 D6 不授予执行许可。
+
+可信 Query Compiler 尚未将这些模块接入主请求链，因此该输入契约本身不能证明上游已完成语义剪枝。D5 为 `dynamic_replan` 时，D6 只对**目前已知的节点**生成方案；运行时新增的节点和依赖须重新经过 D4、D5、D6 与计划后 D8/D7 复检。
+
+## 3. 目标提取与可信验证器
+
+`TargetExtractor` 为每个节点提取一个或多个 `VerificationTarget`：断言 ID、节点 ID、窄断言、原文判据、检查类型、是否必要、明确期望值、原文标准线索和 D3 信息需求 ID。默认 LLM 适配器只提出这些目标，不得声明验证器存在、强弱、版本、授权或已通过。解析器要求严格 JSON；服务还要求判据、期望值和标准线索逐字来自已剪枝文本，节点/信息 ID 真实存在，断言 ID 唯一。每个节点至少要有一项**必要**断言；否则补一项 `NODE_CRITERION_MISSING`，使方案未决。
+
+可信 `VerifierResolver` 返回**带实际可调用函数**的 `VerifierBinding`，并绑定验证器 ID、版本、强度、失败建议、别名及所需能力。零个匹配、多个匹配、所需能力未获 D8 允许或目录版本在规划中变化，均保持未决。模型给出的原文线索只能用于目录匹配，不能自称“强验证”。企业可注入 schema 或政策规则验证器；默认注册表只提供三个范围明确的纯函数：
+
+- `exact_text_v1`：对明确给定的字面期望做精确比对，**仅强验证这个等值断言**；
+- `numeric_equal_v1`：对明确给定的有限数值做 Decimal 等值比对，**仅强验证数值等值**；
+- `citation_presence_v1`：检查指定 D3 信息需求 ID 是否被引用，属于**弱验证**；引用存在不证明它支持结论。
+
+`schema` 和 `policy_rule` 只有在企业注入真实验证器并给出明确标准线索时才能匹配。没有验证器属于 `indeterminate`，不能称作“不可客观验证”。`user_preference` 不查自动验证器，生成 `subjective` 检查和 `user_acceptance` 路径。若用户没有给出客观标准，不能把一个模型评分伪装成强验证。
+
+## 4. 方案与执行结果分开
+
+`VerificationPlan` 按 D4 节点顺序保存 `NodeVerificationPlan`，逐断言保留 `ready` / `subjective` / `indeterminate`、强度、验证器 ID/版本、D3 证据需求和失败建议。只要任何**必要**检查未决，整体为 `indeterminate`；可选检查未决会保留在节点里，不会自动拉低已覆盖的必要方案。纯主观目标可以有完整的“用户验收方案”，但不会自动得到 `pass`。
+
+未来执行后使用独立的 `VerificationOutcome`：`pass` / `fail` / `indeterminate` / `not_applicable`，并保存证据引用和原因码。本阶段**没有**把验证器接入 LangGraph，也没有自动生成 `pass`、执行人工验收或读取企业数据。验证器读取真实资源时必须接受计划后 D8 权限复检；高风险操作还必须经过 D7 门控。注册表版本和数据时效需在执行时重新确认。
+
+## 5. 与现有评测及已知限制
+
+现有 `app/evaluation/` 测试的是 Agent 在离线/基线用例上的整体表现；D6 设计的是**当前请求、当前节点的验收契约**。两者可以复用断言思想，但不共用“测试用例就是业务真值”的假设。
+
+当前模型仍可能遗漏必要断言，或把一项主观/语义判断错误地描述成字面等值检查；原文锚定与目录绑定不能证明语义覆盖完整。尤其是 `complete=true` 的 D4 图也可能漏掉真实业务步骤。上线前需以标注集评估目标提取的覆盖率，并让高风险领域的标准来自可信业务规则。代码入口：[模型](../app/verification/models.py)、[目标提取](../app/verification/extractor.py)、[验证器注册表](../app/verification/registry.py)、[方案服务](../app/verification/service.py)、[装配点](../app/verification/runtime.py)。实施记录见 [S21](S21_d6_verification.md)。
+
+
+## D6架构图：
+
+
+![D6-diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790680080371-95691ys3.png)
+
+
 
 
