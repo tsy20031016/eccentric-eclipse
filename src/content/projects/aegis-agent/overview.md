@@ -1,6 +1,6 @@
 ---
-title: "项目说明"
-description: "项目说明"
+title: "Aegis Agent — 企业级 Agent 执行系统"
+description: "Aegis Agent — 企业级 Agent 执行系统"
 status: "active"
 ---
 
@@ -209,3 +209,48 @@ D8 结果带有 `allowed_capabilities`、`denied_capabilities`、`pruned_capabil
 
 
 ![D7-diagram.png](https://tsy20031016.github.io/eccentric-eclipse/images/projects/aegis-agent/1790632939154-c8az8qhc.png)
+
+
+## D2判定类型：架构思路
+
+## 1. D2 回答什么
+
+D2 判断任务的**主要计算目标**，为后续求解器或规划方式选择提供依据。它不判断数据在哪里（D3）、任务依赖图是什么形状（D4/D5）、答案如何验证（D6），也不授予权限或批准风险动作。
+
+六类目标为：
+`evaluation` 求值/推导、
+`retrieval` 检索/枚举、
+`decision` 判定/约束满足、
+`optimization` 优化/排序、
+`construction` 构造/规划、
+`diagnosis` 解释/诊断。
+“合规判定”是 `decision` 的一种具体应用；约束满足是该类中的另一种形式，不与合规判定画等号。
+
+“定义不足”与六类正交。D2 用 `definition_status=sufficient|insufficient` 表达能否根据现有问题描述确定求解目标与必要条件。缺少的槽位单独列出，不制造第七种问题类型。这里的“充分”只指**问题规格**，不表示所需数据已到手；数据闭合性由 D3 判断。
+
+
+## 2. 输入与前置门控
+
+未来 Query Compiler 应先完成 D1、D8、D7，剪枝后为 D2 提供 `ScopedProblem(text, capability_keys)`。D2 核对所引用的能力是否属于 D8 允许清单、是否未被拒绝或剪枝，以及 D7 是否对这些能力留下可对应的后果记录。D8 未放行或 D7 不适用时返回 `not_applicable`；D7 不可判定、范围不一致时返回 `indeterminate`。任何这些情况都不会调用证据提取器。
+
+`ScopedProblem.text` 必须由可信编译器从已允许的任务片段产生。D2 能检查能力键和后果记录，却不能仅凭字符串证明片段没有夹带被剪枝的语义；当前 Query Compiler 尚未接线，因此这仍是上游契约，而非已完成的端到端保障。D7 的 `human_review` 不阻止只读的 D2 分析，也不意味着动作已获批准。
+
+## 3. 证据提取与校验
+
+`ProblemEvidenceExtractor` 是可替换协议。默认 `AegisLLMProblemEvidenceExtractor` 复用项目配置的 OpenAI Compatible 模型，只标注步骤、类型、原文证据、规格槽位和唯一最终目标，不输出权限、风险或执行结论。
+
+解析层要求严格 JSON、已知字段与六类枚举、1–12 个步骤、恰好一个最终目标。每个证据片段和槽位值都必须逐字出现在 `ScopedProblem.text` 中；多余字段、伪造引文、无效类型或无法解析的结果会变成 `indeterminate`，不默认为求值或单义。槽位只描述问题规格：如优化需要候选空间和评价标准；是否能取得候选数据属于 D3。
+
+## 4. 确定性裁决与输出
+
+服务以唯一最终步骤的类型作为 `primary_kind`，按步骤顺序去重得到 `operations`。例如“查找供应商并选择价格最低者”的主要目标是优化，子操作还包含检索。依赖边和任务图不在此处构造，留给 D4/D5。
+
+每类有明确的必需槽位：求值/检索需要 `target`，判定需要 `predicate`，优化需要 `candidate_space` 与 `criterion`，构造需要 `deliverable`，诊断需要 `phenomenon`。任一步骤缺槽位时，结果保留问题类型，同时给出 `needs_clarification`、`insufficient` 和形如 `step_2.criterion` 的缺失项；全部齐备则为 `classified`、`sufficient`。模型的类型标注仍可能有语义误判；确定性校验解决结构和证据可追溯问题，不等于证明语义正确。
+
+`ProblemClassification` 还输出能力键、原因码、证据以及固定的 `requires_post_plan_recheck=true`。它是未来 Query IR 的一个字段，不是求解结果，也不触发工具。
+
+## 5. 现状与下一步
+
+S18 已实现独立的 D2 模型、LLM 证据提取器、范围门控、裁决器及离线测试。当前没有接入主 Agent 请求链，没有生产样本准确率或在线成本基线。下一步可在可信认证与 Query Compiler 接线后，为六类建立人工标注的开发/测试集，评估语义准确率与“定义不足”的召回率，再与 D3 的信息需求结果联合生成 Query IR。
+
+代码入口：[领域模型](../app/problem_type/models.py)、[证据提取](../app/problem_type/extractor.py)、[分类服务](../app/problem_type/service.py)、[运行时装配](../app/problem_type/runtime.py)。验收记录见 [S18](S18_d2_problem_type.md)。
