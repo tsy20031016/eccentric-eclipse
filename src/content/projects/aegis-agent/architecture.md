@@ -3,8 +3,9 @@ title: "系统架构"
 description: "系统架构"
 status: "active"
 subtitle: "七大系统架构域与模块职责"
-section: foundation
+section: "foundation"
 order: 30
+topic: ""
 ---
 
 ## 架构目标
@@ -14,12 +15,20 @@ order: 30
 ## 逻辑组件
 
 交互与接入域 英文：Experience & Access
+
 理解与决策域 英文：Understanding & Decision
+
 Agent 执行核心 英文：Agent Runtime
+
 能力与数据服务域 英文：Capabilities & Data Services
+
 可观测与质量域 英文：Observability & Quality
+
 学习与优化域 英文：Learning & Optimization
+
 共享基础平台 英文：Shared Foundation
+
+
 
 ## 交互与接入域 — Experience & Access
 
