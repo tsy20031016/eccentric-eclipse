@@ -2,6 +2,9 @@
 title: "系统架构"
 description: "系统架构"
 status: "active"
+subtitle: "七大系统架构域与模块职责"
+section: foundation
+order: 30
 ---
 
 ## 架构目标

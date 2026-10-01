@@ -44,3 +44,11 @@ https://tsy-blog-api.1468709192.workers.dev/version
 项目稿保存在 `src/content/projects/aegis-agent.md`，项目图片保存在 `public/images/projects/aegis-agent/`。编辑入口位于 `/write/projects/aegis-agent/`，登录共用普通写作后台的浏览器登录状态。
 
 首次启用 Aegis 项目写入前，必须在 `worker/` 目录运行 `npx wrangler secret put AEGIS_WRITE_TOKEN` 设置独立项目写入凭据；编辑器不会将此凭据保存到 localStorage。项目读取公开，项目稿保存和图片上传均要求该凭据。普通文章接口使用既有写入策略，不受该项目凭据改变。
+
+## Aegis 文章管理
+
+在项目工作区选择文章，可以修改标题、注释说明（卡片标题上方）、文章简介、所属板块和排序序号，再点击“保存项目稿”。序号为非负整数，同一板块内越小越靠前；相同序号按文档标识稳定排序。设置保存在 Markdown 的 `subtitle`、`description`、`section`、`order` 元数据中，本地草稿也会保留这些设置。
+
+项目首页按“项目导读 → 七大系统架构板块 → 实现过程”组织。新文章可在保存时归入对应板块。新增的七大板块与实现过程文档是待撰写提纲，不代表已经完成实现。旧文章缺少新增字段时默认归入项目导读，排序序号为 100。
+
+本次更新需发布前端和内容文件；若要让后台章节下拉列表也按序号排序，还需部署更新后的 `worker/index.js`。现有 v6 的文档保存接口已能保存这些元数据。

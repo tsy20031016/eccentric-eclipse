@@ -1,6 +1,9 @@
 ---
 title: 摘要
 description: Aegis Agent 研究问题、方法与贡献的摘要页面。
+subtitle: "研究问题与主要贡献"
+section: foundation
+order: 20
 status: active
 ---
 

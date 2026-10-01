@@ -2,6 +2,9 @@
 title: "Aegis Agent —用户问题十维解构（编排层关键）"
 description: "Aegis Agent —用户问题十维解构（编排层关键）"
 status: "active"
+subtitle: "目标、定位与研究范围"
+section: foundation
+order: 10
 ---
 
 ## S1:用户问题十维解构规范（Enterprise Query Decomposition Taxonomy）

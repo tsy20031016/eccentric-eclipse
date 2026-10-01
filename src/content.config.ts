@@ -23,6 +23,9 @@ const projects = defineCollection({
 		title: z.string(),
 		description: z.string(),
 		status: z.string().default("active"),
+		subtitle: z.string().default(""),
+		order: z.number().int().min(0).default(100),
+		section: z.enum(['foundation', 'access', 'decision', 'runtime', 'capabilities', 'quality', 'learning', 'governance', 'implementation']).default('foundation'),
 	}),
 });
 

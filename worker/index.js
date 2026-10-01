@@ -179,9 +179,10 @@ async function listProjectDocuments(env) {
 		const data = await contentResponse.json();
 		const content = data.content ? new TextDecoder().decode(Uint8Array.from(atob(data.content.replace(/\s/g, "")), (c) => c.charCodeAt(0))) : "";
 		const title = content.match(/^title:\s*(?:"((?:[^"\\]|\\.)*)"|'([^']*)'|(.*))\s*$/m);
-		documents.push({ slug, title: title ? (title[1] ? JSON.parse(`"${title[1]}"`) : title[2] || title[3].trim()) : slug });
+		const order = Number(content.match(/^order:\s*(\d+)\s*$/m)?.[1] ?? 100);
+		documents.push({ slug, order, title: title ? (title[1] ? JSON.parse(`"${title[1]}"`) : title[2] || title[3].trim()) : slug });
 	}
-	documents.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
+	documents.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
 	return json({ success: true, documents });
 }
 
