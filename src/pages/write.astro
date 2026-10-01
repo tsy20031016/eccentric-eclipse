@@ -272,13 +272,8 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 						</label>
 						<label class="format-control size-picker">
 							<span>文字大小</span>
-							<select id="textSize">
-								<option value="3">正常</option>
-								<option value="2">小</option>
-								<option value="4">大</option>
-								<option value="5">特大</option>
-							</select>
-						</label>
+							<select id="textSize"><option value="12" >12 px</option><option value="14" >14 px</option><option value="16" selected>16 px</option><option value="18" >18 px</option><option value="20" >20 px</option><option value="24" >24 px</option><option value="28" >28 px</option><option value="32" >32 px</option></select>
+						</label><button type="button" data-text-color="#222222">正文</button><button type="button" data-text-color="#c2413d">红色</button><button type="button" data-text-color="#2563eb">蓝色</button><button type="button" data-text-color="#15803d">绿色</button><button type="button" data-clear-format>清除格式</button><button type="button" data-format-undo>撤销</button><button type="button" data-format-redo>重做</button><small>先选中文字，再选择颜色或字号</small>
 					</div>
 
 					<section class="formula-editor" aria-label="KaTeX 公式编辑器">
@@ -852,26 +847,13 @@ $$"
 					return `*${inner}*`;
 				}
 
-				if (element.tagName === "SPAN" && element.style.color) {
-					const color = colorToHex(element.style.color);
-					if (color) {
-						return `<span style="color: ${color}">${inner}</span>`;
-					}
-				}
-
-				if (element.tagName === "FONT" && element.color) {
-					const color = colorToHex(element.color);
-					if (color) {
-						return `<span style="color: ${color}">${inner}</span>`;
-					}
-				}
-
-				if (element.tagName === "FONT" && element.size) {
-					const sizes = { "2": "14px", "3": "16px", "4": "20px", "5": "24px" };
-					const size = sizes[element.size];
-					if (size) {
-						return `<span style="font-size: ${size}">${inner}</span>`;
-					}
+				if (["SPAN","FONT"].includes(element.tagName)) {
+					let formatted=inner;
+					const color=colorToHex(element.style.color || element.color || '');
+					const size=element.style.fontSize || ({'2':'14px','3':'16px','4':'20px','5':'24px'}[element.size]);
+					if(size && /^\d+px$/.test(size))formatted=`<span style="font-size: ${size}">${formatted}</span>`;
+					if(color)formatted=`<span style="color: ${color}">${formatted}</span>`;
+					return formatted;
 				}
 
 				if (["DIV", "P"].includes(element.tagName)) {
@@ -1236,14 +1218,6 @@ $$"
 			boldButton.addEventListener("mousedown", (event) => {
 				event.preventDefault();
 				applyFormat("bold");
-			});
-
-			textColor.addEventListener("input", () => {
-			applyFormat("foreColor", textColor.value);
-			});
-
-			textSize.addEventListener("change", () => {
-				applyFormat("fontSize", textSize.value);
 			});
 
 
@@ -2337,7 +2311,11 @@ $$"
 				}
 			);
 		</script>
-	</body>
+	<script>
+import { initWritingFormat } from '../utils/writing-format.mjs';
+initWritingFormat({editor:document.querySelector('#content'),color:document.querySelector('#textColor'),size:document.querySelector('#textSize'),toolbar:document.querySelector('.format-toolbar'),message:document.querySelector('#message')});
+</script>
+</body>
 </html>
 
 

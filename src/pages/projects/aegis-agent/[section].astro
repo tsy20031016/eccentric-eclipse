@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from "astro:content";
+import { aegisSections } from "../../../data/aegis-sections";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 
 const entries = await getCollection("projects", ({ id }) => id.startsWith("aegis-agent/"));
@@ -17,6 +18,7 @@ const projectBase = `${import.meta.env.BASE_URL}/projects/aegis-agent/`;
 	<article class="document">
 		<nav><a href={projectBase}>← Aegis Agent</a><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>项目工作区 →</a></nav>
 		<p class="eyebrow">AEGIS AGENT · PROJECT DOCUMENT</p>
+		<p class="lead">{aegisSections.find(section => section.id === entry.data.section)?.title}{entry.data.topic && ` / ${entry.data.topic}`}</p>
 		<h1>{entry.data.title}</h1><p class="lead">{entry.data.description}</p>
 		<hr /><div class="body"><Content /></div>
 		<footer><a href={projectBase}>返回项目主页</a><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>编辑项目文档</a></footer>

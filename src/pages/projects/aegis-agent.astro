@@ -1,4 +1,5 @@
 ---
+import AegisCards from "../../components/AegisCards.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { aegisSections } from "../../data/aegis-sections";
@@ -17,14 +18,11 @@ const cards = documents.sort((a, b) => a.data.order - b.data.order || a.id.local
 		<div class="meta"><span>研究项目 · 持续更新</span><a href={`${import.meta.env.BASE_URL}/write/projects/aegis-agent/`}>项目工作区 →</a></div>
 		{aegisSections.map((section, sectionIndex) => <section class="chapter-group" aria-label={section.title}>
 			<h2 class="group-title">{sectionIndex > 0 && sectionIndex < 8 ? `${String(sectionIndex).padStart(2, "0")} · ` : ""}{section.title}</h2>
-			<div class="cards">
-			{cards.filter(document => document.data.section === section.id).map((document, index) => {
-				const slug = document.id.split("/").at(-1) || "";
-				return <a class="card" href={`${import.meta.env.BASE_URL}/projects/aegis-agent/${slug}/`}>
-					<span class="number">{String(index + 1).padStart(2, "0")}</span><div><p>{document.data.subtitle}</p><h2>{document.data.title}</h2><span class="description">{document.data.description}</span></div><span class="arrow">↗</span>
-				</a>;
-			})}
-			</div>
+			<AegisCards documents={cards.filter(document => document.data.section === section.id && !document.data.topic)} />
+			{Array.from(new Set(cards.filter(document => document.data.section === section.id && document.data.topic).map(document => document.data.topic))).map((topic,topicIndex) => <details class="topic" open>
+				<summary><span>{sectionIndex}.{topicIndex+1}</span> {topic}<small>{cards.filter(document => document.data.section === section.id && document.data.topic === topic).length} 篇文章</small></summary>
+				<AegisCards documents={cards.filter(document => document.data.section === section.id && document.data.topic === topic)} />
+			</details>)}
 			{!cards.some(document => document.data.section === section.id) && <p class="empty">文章待补充</p>}
 		</section>)}
 		<p class="note">具体章节会在对应子页面中展开；资料仍在整理的部分会明确标注为待补充。</p>
@@ -32,6 +30,7 @@ const cards = documents.sort((a, b) => a.data.order - b.data.order || a.id.local
 </BaseLayout>
 
 <style>
+.topic{margin:24px 0 0;padding-left:22px;border-left:2px solid #deded5}.topic summary{cursor:pointer;padding:14px 0;font-size:18px}.topic summary span{color:#999;font:12px monospace}.topic summary small{margin-left:14px;color:#999;font-size:12px}
 	.chapter-group{margin-top:36px}.group-title{font-size:20px;font-weight:500;margin:0 0 18px}.empty{padding:18px 8px;color:#999;font-size:14px;border-bottom:1px solid #e4e4dd}
 	.hub{width:min(900px,calc(100% - 40px));margin:0 auto;padding:48px 0 110px;color:#222}.back{color:#777;text-decoration:none;font-size:13px}.eyebrow{margin:64px 0 16px;color:#888;font:11px monospace;letter-spacing:.16em}h1{margin:0;font:400 clamp(46px,8vw,76px)/1.08 Georgia,serif;letter-spacing:-.045em}.lead{margin:20px 0 0;font-size:21px;color:#555}.intro{max-width:680px;margin:22px 0;color:#777;font-size:16px;line-height:1.9}.meta{display:flex;justify-content:space-between;margin:30px 0 44px;padding-bottom:18px;border-bottom:1px solid #e4e4dd;color:#999;font-size:13px}.meta a{color:#333;text-decoration:none}.cards{border-top:1px solid #e4e4dd}.card{display:grid;grid-template-columns:58px 1fr 28px;gap:18px;align-items:start;padding:25px 8px;border-bottom:1px solid #e4e4dd;color:inherit;text-decoration:none;transition:background .2s,padding .2s}.card:hover{padding-left:15px;background:#f5f5f0}.number{padding-top:5px;color:#aaa;font:12px monospace}.card p{margin:0 0 8px;color:#999;font-size:12px}.card h2{margin:0 0 8px;font:400 27px Georgia,serif}.description{color:#666;font-size:14px;line-height:1.75}.arrow{color:#999}.note{margin-top:24px;color:#999;font-size:12px}@media(max-width:600px){.hub{padding-top:30px}.eyebrow{margin-top:48px}.card{grid-template-columns:34px 1fr 20px;gap:10px}.card h2{font-size:23px}}
 </style>

@@ -5,6 +5,7 @@ status: "active"
 subtitle: ""
 section: "decision"
 order: 100
+topic: "用户问题十维解构"
 ---
 
 ## S1:用户问题十维解构规范（Enterprise Query Decomposition Taxonomy）
