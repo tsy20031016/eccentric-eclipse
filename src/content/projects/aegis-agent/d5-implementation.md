@@ -1,7 +1,7 @@
 ---
 title: "D5 · 结构确定性的实现过程"
 description: "记录 D5 结构确定性的设计、实现步骤与验证结果。"
-subtitle: "实现记录 · 待撰写"
+subtitle: "实现记录 "
 status: active
 section: "decision"
 topic: "用户问题十维解构"
