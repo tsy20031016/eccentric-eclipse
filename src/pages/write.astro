@@ -1,9 +1,11 @@
 ---
+import { encryptDiary } from "../utils/diary-crypto";
 import { getCollection } from "astro:content";
 
 const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 
 // 文章管理列表（构建时生成，每次部署后自动更新）
+const diaryFiles = new Set((await getCollection("posts")).filter(p => p.data.category === "日记").map(p => `${p.id}.md`));
 const postsIndex = (await getCollection("posts"))
 	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 	.map((post) => ({
@@ -21,13 +23,13 @@ const rawFiles = import.meta.glob("../content/posts/*.md", {
 	eager: true,
 });
 
-	const rawContents: Record<string, string> = {};
+	const rawContents: Record<string, any> = {};
 
 for (const [path, raw] of Object.entries(rawFiles)) {
 	const filename = path.split("/").pop();
 
 	if (filename) {
-		rawContents[filename] = raw;
+		rawContents[filename] = diaryFiles.has(filename) ? encryptDiary(String(raw)) : raw;
 	}
 }
 ---
@@ -563,7 +565,7 @@ $$"
 		</main>
 
 		<script define:vars={{ apiUrl, postsIndex, rawContents }}>
-			const ADMIN_PASSWORD = "20031016";
+			const ADMIN_PASSWORD_HASH = "ed9c3bac0b759f98ed2fd1599a76001b5f367f9d6a17e099a88bfcddad27d43c";
 
 			const title =
 				document.querySelector("#title");
@@ -1122,8 +1124,18 @@ $$"
 			}
 
 
-			function enterEditMode(filename) {
-				const raw = rawContents[filename];
+			async function enterEditMode(filename) {
+                let raw = rawContents[filename];
+                if (raw && typeof raw === 'object') {
+                  const password = prompt('请输入日记访问密码');
+                  if (password === null) return;
+                  try {
+                    const decode = v => Uint8Array.from(atob(v), c => c.charCodeAt(0));
+                    const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+                    const key = await crypto.subtle.deriveKey({name:'PBKDF2',salt:decode(raw.salt),iterations:210000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['decrypt']);
+                    raw = new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:decode(raw.iv)},key,decode(raw.data)));
+                  } catch { message.textContent = '日记密码不正确，无法编辑。'; return; }
+                }
 
 				if (!raw) {
 					message.textContent =
@@ -2176,11 +2188,12 @@ $$"
 				adminPassword.focus();
 			}
 
-			function unlockAdmin() {
+			async function unlockAdmin() {
 				const entered =
 					String(adminPassword.value ?? "");
 
-				if (entered !== ADMIN_PASSWORD) {
+				const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(entered))), b => b.toString(16).padStart(2, '0')).join('');
+                if (digest !== ADMIN_PASSWORD_HASH) {
 					adminAuthMessage.textContent = "密码不正确。";
 					adminPassword.focus();
 					return;
@@ -2188,7 +2201,7 @@ $$"
 
 				localStorage.setItem(
 					"tsy-blog-admin-token",
-					ADMIN_PASSWORD
+					entered
 				);
 
 				adminAuthMessage.textContent = "";

@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from "astro:content";
+import DiaryLock from "../../components/DiaryLock.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { readingTime } from "../../utils/reading-time";
 import "katex/dist/katex.min.css";
@@ -32,7 +33,8 @@ const tags = post.data.tags ?? [];
 const minutes = readingTime(post.body ?? "");
 ---
 
-<BaseLayout title={`${post.data.title} · TSY`}>
+<BaseLayout title={post.data.category === "日记" ? "私密日记 · TSY" : `${post.data.title} · TSY`}>
+<DiaryLock enabled={post.data.category === "日记"}>
 	<div class="page">
 		<article class="article">
 			<header class="article-header">
@@ -97,7 +99,7 @@ const minutes = readingTime(post.body ?? "");
 					>
 						<span class="nav-label">← 上一篇</span>
 
-						<span class="nav-title">{older.data.title}</span>
+						<span class="nav-title">{older.data.category === "日记" ? "私密日记" : older.data.title}</span>
 					</a>
 				) : (
 					<span class="nav-card placeholder" />
@@ -110,7 +112,7 @@ const minutes = readingTime(post.body ?? "");
 					>
 						<span class="nav-label">下一篇 →</span>
 
-						<span class="nav-title">{newer.data.title}</span>
+						<span class="nav-title">{newer.data.category === "日记" ? "私密日记" : newer.data.title}</span>
 					</a>
 				) : (
 					<span class="nav-card placeholder" />
@@ -135,10 +137,12 @@ const minutes = readingTime(post.body ?? "");
 			</aside>
 		)}
 	</div>
+</DiaryLock>
 </BaseLayout>
 
 <script>
-	function splitArticleParagraphs() {
+	document.addEventListener("diary:unlocked", splitArticleParagraphs);
+function splitArticleParagraphs() {
 		const articleContent = document.querySelector(".article-content");
 
 		if (!articleContent) {

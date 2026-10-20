@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import DiaryLock from "../components/DiaryLock.astro";
 import ArticleList from "../components/ArticleList.astro";
 
 const posts = (await getCollection("posts"))
@@ -15,8 +16,10 @@ const posts = (await getCollection("posts"))
 		<p class="intro">一些不必归类，只想认真留下来的日常。</p>
 	</header>
 	<main class="content-container">
-		<div class="section-marker"><span>∞</span><span>{posts.length} 篇记录</span></div>
+		<DiaryLock>
+<div class="section-marker"><span>∞</span><span>{posts.length} 篇记录</span></div>
 		<ArticleList posts={posts} showCategory={false} />
+</DiaryLock>
 	</main>
 </BaseLayout>
 

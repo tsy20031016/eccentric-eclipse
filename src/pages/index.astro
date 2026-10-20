@@ -4,13 +4,14 @@ import { getCollection } from "astro:content";
 import ArticleList from "../components/ArticleList.astro";
 
 const allPosts = (await getCollection("posts"))
-	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+	.filter((post) => post.data.category !== "日记")
+.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 
 const posts = allPosts.slice(0, 4);
 
 const mathPosts = allPosts.filter((post) => post.data.category === "数学").slice(0, 2);
 const aiPosts = allPosts.filter((post) => post.data.category === "AI").slice(0, 2);
-const diaryPosts = allPosts.filter((post) => post.data.category === "日记").slice(0, 2);
+
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
@@ -101,7 +102,7 @@ const aboutUrl = `${base}about/`;
 				<div class="category-note-grid">
 					<section class="category-note"><h2>数学</h2><ArticleList posts={mathPosts} showCategory={false} /></section>
 					<section class="category-note"><h2>AI</h2><ArticleList posts={aiPosts} showCategory={false} /></section>
-					<section class="category-note"><h2>日记</h2><ArticleList posts={diaryPosts} showCategory={false} /></section>
+					<section class="category-note"><h2>日记</h2><p>日常记录已上锁。</p><a href={`${base}diary/`}>输入密码查看 →</a></section>
 				</div>
 			</section>
 
