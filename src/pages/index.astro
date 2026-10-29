@@ -1,5 +1,6 @@
 ---
 import Header from "../components/Header.astro";
+import SelfNotes from "../components/SelfNotes.astro";
 import { getCollection } from "astro:content";
 import ArticleList from "../components/ArticleList.astro";
 
@@ -87,6 +88,8 @@ const writeUrl = `${base}write/`;
 					<span>∫</span>
 				</div>
 			</section>
+
+			<SelfNotes />
 
 			<section class="thinking-section">
 				<div class="section-label">

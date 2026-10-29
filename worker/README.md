@@ -1,4 +1,4 @@
-# TSY Blog Worker v6 — 部署说明
+# TSY Blog Worker v7 — 部署说明
 
 写作后台 `src/pages/write.astro` 会请求：
 
@@ -13,7 +13,8 @@
 | `/projects/aegis-agent/documents` | GET / POST | 列出 / 新建项目章节 |
 | `/projects/aegis-agent/documents/:slug` | DELETE | 删除非核心项目章节 |
 | `/projects/upload` | POST | 上传 Aegis Agent 项目图片 |
-| `/version` | GET | 确认已部署 v6 |
+| `/self-notes` | GET / PUT | 读取 / 保存写给自己的话 |
+| `/version` | GET | 确认已部署 v7 |
 
 线上旧 Worker **只处理发布和传图**。编辑 / 删除会打到 `/posts/update`、`/posts/delete`，旧代码返回纯文本 `Not Found`，页面就会报网络或接口失败。
 
@@ -39,7 +40,7 @@ npx wrangler deploy
 
 https://tsy-blog-api.1468709192.workers.dev/version
 
-应看到 JSON：`"version": 6`，并列出 Aegis 子文档及章节管理接口。若要让写作后台的项目编辑器读取和保存，必须部署此版 Worker；GitHub Pages 前端还需单独构建部署。
+应看到 JSON：`"version": 7`，并列出写给自己、Aegis 子文档及章节管理接口。GitHub Pages 前端还需单独构建部署。
 
 项目稿保存在 `src/content/projects/aegis-agent.md`，项目图片保存在 `public/images/projects/aegis-agent/`。编辑入口位于 `/write/projects/aegis-agent/`，登录共用普通写作后台的浏览器登录状态。
 
@@ -56,3 +57,16 @@ https://tsy-blog-api.1468709192.workers.dev/version
 文章还可填写“子专题”（`topic`），形成“板块 → 子专题 → 文章”的层级。相同板块中名称相同的子专题自动合并；留空则显示在板块首页。子专题内按文章序号排序，首页可折叠展开。已提供“理解、决策与规划域 → 用户问题十维解构 → D1–D10 实现过程”的写作提纲。
 
 普通文章与 Aegis 编辑器均支持保持文字选区后直接调整颜色和像素字号，以及常用色、清除格式、撤销与重做。项目 Markdown 编辑器对跨行文字逐行添加格式，保留标题和列表标记；公式、代码与元数据应使用各自编辑工具。
+# 写给自己（v7）
+
+写作页的「写给自己」按每行一句编辑，保存到 `src/data/self-notes.json`。
+首页构建时读取该文件，每 3 秒切换一句；只有一句时静态显示，空列表时显示占位文案。
+这些话公开展示，不属于加密日记。
+
+- `GET /self-notes`：读取 `{ success, notes, sha }`。
+- `PUT /self-notes`：提交 `{ notes, sha }`，使用现有 `WRITE_TOKEN` / `X-Write-Token` 校验，返回最新 `sha`。
+- 每次最多 100 句，每句最多 500 个字符；传入空数组可清空。
+- 版本冲突返回 409，避免覆盖其他设备上的更新。
+
+上线时需同时发布 Astro 网站并部署本目录 Worker（`npx wrangler deploy --config worker/wrangler.toml`），
+`/version` 应返回版本 7。后台保存会触发仓库现有 GitHub Pages 构建，完成后首页更新。

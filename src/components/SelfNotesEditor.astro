@@ -1,0 +1,81 @@
+---
+import notes from '../data/self-notes.json';
+---
+
+<details class="notes-editor">
+  <summary>写给自己 <span>管理首页每三秒轮播的话</span></summary>
+  <p>每行一句，按顺序循环展示。删除全部内容后保存，可清空轮播。这里的内容会公开显示在首页。</p>
+  <label for="selfNotesInput">想对自己说的话</label>
+  <textarea id="selfNotesInput" rows="6" placeholder="在这里写下第一句话……">{notes.join('\n')}</textarea>
+  <button id="saveSelfNotes" type="button" disabled>保存到首页</button>
+  <p id="selfNotesStatus" role="status">打开后读取最新内容。</p>
+</details>
+
+<script>
+  const root = document.querySelector<HTMLDetailsElement>('.notes-editor')!;
+  const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
+  const save = root.querySelector<HTMLButtonElement>('button')!;
+  const status = root.querySelector<HTMLElement>('[role="status"]')!;
+  const endpoint = 'https://tsy-blog-api.1468709192.workers.dev/self-notes';
+  let loaded = false;
+  let loading = false;
+  let sha: string | null = null;
+  async function readResponse(response: Response) {
+    let data;
+    try { data = await response.json(); }
+    catch { throw new Error('接口尚不可用，请部署新版 worker/index.js 后重试。'); }
+    if (!response.ok || !data.success) throw new Error(data.message || '请求失败，请重试。');
+    return data;
+  }
+  root.addEventListener('toggle', async () => {
+    if (!root.open || loaded || loading) return;
+    loading = true;
+    input.disabled = true;
+    status.textContent = '正在读取最新内容……';
+    try {
+      const data = await readResponse(await fetch(endpoint, { cache: 'no-store' }));
+      sha = data.sha;
+      input.value = localStorage.getItem('tsy-self-notes-draft') ?? data.notes.join('\n');
+      loaded = true;
+      save.disabled = false;
+      status.textContent = localStorage.getItem('tsy-self-notes-draft') !== null ? '已恢复本地草稿，保存后同步到首页。' : '已读取最新内容。';
+    } catch (error) { status.textContent = `${(error as Error).message} 关闭后重新展开可重试。`; }
+    finally { input.disabled = false; loading = false; }
+  });
+  input.addEventListener('input', () => {
+    localStorage.setItem('tsy-self-notes-draft', input.value);
+    status.textContent = '草稿已保存在本机，尚未同步到首页。';
+  });
+  save.addEventListener('click', async () => {
+    const notes = input.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (notes.length > 100 || notes.some(line => line.length > 500)) {
+      status.textContent = '最多保存 100 句，每句不超过 500 个字符。';
+      return;
+    }
+    save.disabled = true;
+    input.disabled = true;
+    status.textContent = '正在保存……';
+    try {
+      const data = await readResponse(await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Write-Token': localStorage.getItem('tsy-blog-admin-token') || '' },
+        body: JSON.stringify({ notes, sha }),
+      }));
+      sha = data.sha;
+      localStorage.removeItem('tsy-self-notes-draft');
+      status.textContent = '已保存，网站重新构建后首页生效。';
+    } catch (error) { status.textContent = (error as Error).message; }
+    finally { save.disabled = false; input.disabled = false; }
+  });
+</script>
+
+<style>
+  .notes-editor { margin: 28px 0 36px; padding: 22px; border: 1px solid #deded8; border-radius: 12px; background: #fafaf7; }
+  summary { cursor: pointer; font-weight: 600; font-size: 18px; }
+  summary span { display: block; margin: 8px 0 0; font-size: 12px; font-weight: 400; color: #888; }
+  p { color: #777; font-size: 13px; line-height: 1.8; }
+  label { display: block; margin-bottom: 10px; font-size: 14px; }
+  textarea { width: 100%; box-sizing: border-box; resize: vertical; padding: 14px; font: inherit; line-height: 1.8; border: 1px solid #ddd; border-radius: 8px; background: white; }
+  button { margin-top: 14px; padding: 10px 18px; border: 0; border-radius: 6px; background: #292929; color: white; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: wait; }
+</style>

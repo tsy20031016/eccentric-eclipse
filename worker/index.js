@@ -1,5 +1,5 @@
 /**
- * TSY Blog Worker v6
+ * TSY Blog Worker v7
  *
  * 必须整份部署到 Cloudflare Worker「tsy-blog-api」。
  * 线上旧版只认识 POST / 和 POST /upload，对编辑/删除会返回纯文本
@@ -13,7 +13,8 @@
  *
  * 额外：
  *   GET  /                健康检查（纯文本，兼容旧版）
- *   GET  /version         确认已部署 v3（JSON，含路由列表）
+ *   GET  /version         确认已部署 v7（JSON，含路由列表）
+ *   GET / PUT /self-notes 读取 / 保存写给自己的话
  *
  * Cloudflare → Worker → Settings → Variables and Secrets：
  *   GITHUB_TOKEN   有 repo 写权限的 GitHub PAT（必需）
@@ -33,7 +34,8 @@ const PROJECT_DOCUMENTS = {
 	abstract: "src/content/projects/aegis-agent/abstract.md",
 	architecture: "src/content/projects/aegis-agent/architecture.md",
 };
-const VERSION = 6;
+const VERSION = 7;
+const SELF_NOTES_FILE = "src/data/self-notes.json";
 
 const CORS = {
 	"Access-Control-Allow-Origin": "*",
@@ -88,8 +90,10 @@ async function route(request, env) {
 			return json({
 				success: true,
 				version: VERSION,
-				message: "TSY Blog API v6",
+				message: "TSY Blog API v7",
 				routes: [
+					"GET /self-notes",
+					"PUT /self-notes",
 					"POST /",
 					"POST /upload",
 					"POST /posts/update",
@@ -106,6 +110,7 @@ async function route(request, env) {
 				],
 			});
 		}
+		if (path === "/self-notes") return getSelfNotes(env);
 		if (path === "/projects/aegis-agent") {
 			return getProject(env);
 		}
@@ -117,6 +122,7 @@ async function route(request, env) {
 	}
 
 	if (method === "POST" || method === "PUT") {
+		if (path === "/self-notes") return saveSelfNotes(request, env);
 		if (path === "/projects/aegis-agent/documents") return createProjectDocument(request, env);
 		if (path === "/projects/aegis-agent") {
 			return saveProject(request, env);
@@ -157,6 +163,38 @@ async function route(request, env) {
 		},
 		404
 	);
+}
+
+async function readSelfNotes(env) {
+	const response = await githubRequest(env, SELF_NOTES_FILE, { method: "GET" }, true);
+	if (response.status === 404) return { notes: [], sha: null };
+	if (!response.ok) throw await githubError(response, "读取写给自己的话失败");
+	const file = await response.json();
+	const bytes = Uint8Array.from(atob(file.content.replace(/\s/g, "")), c => c.charCodeAt(0));
+	const notes = JSON.parse(new TextDecoder().decode(bytes));
+	if (!Array.isArray(notes) || notes.some(note => typeof note !== "string")) throw new Error("话语文件格式错误。");
+	return { notes, sha: file.sha };
+}
+
+async function getSelfNotes(env) {
+	return json({ success: true, ...await readSelfNotes(env) });
+}
+
+async function saveSelfNotes(request, env) {
+	if (!checkWriteToken(request, env)) return json({ success: false, message: "写入凭据不正确。" }, 401);
+	const body = await readJson(request);
+	if (!Array.isArray(body.notes) || body.notes.length > 100 || body.notes.some(note => typeof note !== "string" || !note.trim() || note.length > 500)) {
+		return json({ success: false, message: "最多保存 100 句，每句须为非空文本且不超过 500 个字符。" }, 400);
+	}
+	const existing = await readSelfNotes(env);
+	if (body.sha !== existing.sha) return json({ success: false, message: "内容已在其他地方更新。请刷新页面后重新展开编辑区，本地草稿会保留。" }, 409);
+	const result = await commitFile(env, {
+		path: SELF_NOTES_FILE,
+		content: JSON.stringify(body.notes.map(note => note.trim()), null, 2) + "\n",
+		sha: existing.sha,
+		message: "Update words to myself",
+	});
+	return json({ success: true, sha: result.content.sha });
 }
 
 function getProjectDocumentPath(path) {
@@ -494,6 +532,7 @@ async function commitFile(env, { path, content, sha, message }) {
 	if (!response.ok) {
 		throw await githubError(response, "GitHub 提交失败");
 	}
+	return response.json();
 }
 
 async function commitBinary(env, { path, bytes, message }) {

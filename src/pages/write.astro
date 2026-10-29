@@ -1,5 +1,6 @@
 ---
 import { encryptDiary } from "../utils/diary-crypto";
+import SelfNotesEditor from "../components/SelfNotesEditor.astro";
 import { getCollection } from "astro:content";
 import { mathSubjects } from "../utils/math-categories";
 
@@ -136,6 +137,8 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 				<!-- ================================
 				     编辑模式提示条
 				================================ -->
+
+				<SelfNotesEditor />
 
 				<div class="edit-banner" id="editBanner" hidden>
 					<span class="edit-banner-text">
