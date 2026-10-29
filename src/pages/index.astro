@@ -19,6 +19,7 @@ const homeUrl = base;
 const postsUrl = `${base}posts/`;
 const projectsUrl = `${base}projects/`;
 const aboutUrl = `${base}about/`;
+const writeUrl = `${base}write/`;
 ---
 
 <html lang="zh-CN">
@@ -77,6 +78,9 @@ const aboutUrl = `${base}about/`;
 							了解我
 						</a>
 					</div>
+					<a class="writing-link" href={writeUrl}>
+						留下今天的痕迹 <span aria-hidden="true">↗</span>
+					</a>
 				</div>
 
 				<div class="hero-mark">
@@ -446,6 +450,23 @@ const aboutUrl = `${base}about/`;
 		gap: 24px;
 
 		margin-top: 42px;
+	}
+
+	.writing-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 20px;
+		padding: 6px 0;
+		color: #666;
+		font-size: 13px;
+		text-decoration: none;
+		text-underline-offset: 5px;
+	}
+
+	.writing-link:hover, .writing-link:focus-visible {
+		color: #202020;
+		text-decoration: underline;
 	}
 
 	.primary-button {
