@@ -1,5 +1,8 @@
 ---
-import notes from '../data/self-notes.json';
+import storedNotes from '../data/self-notes.json';
+
+// Keep author numbering in storage, but omit list markers from public text.
+const notes = storedNotes.map(note => note.replace(/^\s*(?:\d+[.．](?!\d)|\d+[、)）]|\(\d+\)|（\d+）)\s*/u, ''));
 ---
 
 <section class="self-notes" aria-label="写给自己" data-notes={JSON.stringify(notes)}>
@@ -41,7 +44,7 @@ import notes from '../data/self-notes.json';
         index = next;
         text.textContent = notes[index];
         fadeOut.cancel();
-        await text.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: 'ease-out' }).finished;
+        await text.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1200, easing: 'ease-in-out' }).finished;
       } finally {
         fadeOut.cancel();
         switching = false;
