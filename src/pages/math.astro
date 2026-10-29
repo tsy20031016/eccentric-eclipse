@@ -2,24 +2,21 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ArticleList from "../components/ArticleList.astro";
+import { mathSubjects, getMathSubject } from "../utils/math-categories";
 
 const posts = (await getCollection("posts"))
 	.filter((post) => post.data.category === "数学")
 	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-const topics = [
-	{ name: "数学分析", id: "analysis", description: "综合笔记与基础知识。" },
-	{ name: "极限", id: "limits", description: "数列、函数极限与收敛的理解。" },
-	{ name: "导数", id: "derivatives", description: "变化率、微分与求导方法。" },
-	{ name: "积分", id: "integrals", description: "积分理论、计算方法与应用。" },
-];
-const groups = topics.map((topic) => ({
-	...topic,
-	posts: posts.filter((post) => {
-		const labels = post.data.tags.filter((tag) => topics.some((item) => item.name === tag));
-		return labels.length ? labels.includes(topic.name) : topic.name === "数学分析";
-	}),
-}));
+const groups = mathSubjects.map((subject) => {
+	const subjectPosts = posts.filter((post) => getMathSubject(post.data.tags) === subject.name);
+	return {
+		...subject,
+		posts: subjectPosts,
+		general: subjectPosts.filter((post) => !subject.topics.some((topic) => post.data.tags.includes(topic.name))),
+		topics: subject.topics.map((topic) => ({ ...topic, posts: subjectPosts.filter((post) => post.data.tags.includes(topic.name)) })),
+	};
+});
 ---
 
 <BaseLayout title="数学 · TSY">
@@ -41,7 +38,20 @@ const groups = topics.map((topic) => ({
 					<h2 id={`${group.id}-title`}>{group.name}<span>{group.posts.length} 篇</span></h2>
 					<p>{group.description}</p>
 				</header>
-				<ArticleList posts={group.posts} showCategory={false} />
+				{group.topics.length > 0 ? (
+					<div class="subject-content">
+						<nav class="subtopic-nav" aria-label={`${group.name}子板块`}>
+							{group.topics.map((topic) => <a href={`#${topic.id}`}>{topic.name}<span>{topic.posts.length}</span></a>)}
+						</nav>
+						{group.general.length > 0 && <section class="subtopic"><h3>综合笔记</h3><ArticleList posts={group.general} showCategory={false} /></section>}
+						{group.topics.map((topic) => (
+							<section class="subtopic" id={topic.id} aria-labelledby={`${topic.id}-title`}>
+								<h3 id={`${topic.id}-title`}>{topic.name}<span>{topic.posts.length} 篇</span></h3>
+								<ArticleList posts={topic.posts} showCategory={false} />
+							</section>
+						))}
+					</div>
+				) : <ArticleList posts={group.posts} showCategory={false} />}
 			</section>
 		))}
 	</main>
@@ -65,5 +75,12 @@ const groups = topics.map((topic) => ({
 	.topic-header h2 { display: flex; align-items: baseline; gap: 16px; margin: 0; color: #171717; font-size: 25px; font-weight: 400; }
 	.topic-header h2 span { color: #8b8b83; font-size: 12px; }
 	.topic-header p { margin: 10px 0 0; color: #777; font-size: 13px; line-height: 1.8; }
+	.subject-content { padding-left: 22px; border-left: 2px solid #e5e5df; }
+	.subtopic-nav { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+	.subtopic-nav a { display: inline-flex; gap: 12px; padding: 8px 12px; color: #444; background: #efefe7; border-radius: 4px; text-decoration: none; font-size: 13px; }
+	.subtopic-nav a:hover, .subtopic-nav a:focus-visible { outline: 1px solid #aaa993; }
+	.subtopic-nav span, .subtopic h3 span { color: #8b8b83; font-size: 12px; }
+	.subtopic { margin-top: 32px; scroll-margin-top: 100px; }
+	.subtopic h3 { display: flex; align-items: baseline; gap: 16px; margin: 0 0 18px; font-size: 20px; font-weight: 400; }
 	@media (max-width: 600px) { .page-header { padding: 68px 20px 58px; } .content-container { padding: 28px 20px 80px; } }
 </style>

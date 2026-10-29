@@ -1,6 +1,7 @@
 ---
 import { encryptDiary } from "../utils/diary-crypto";
 import { getCollection } from "astro:content";
+import { mathSubjects } from "../utils/math-categories";
 
 const apiUrl = "https://tsy-blog-api.1468709192.workers.dev/";
 
@@ -218,13 +219,28 @@ for (const [path, raw] of Object.entries(rawFiles)) {
 					     标签
 					================================ -->
 
+					<div id="mathClassification">
+						<label class="field">
+							<span>数学大板块</span>
+							<select id="mathSubject">
+								{mathSubjects.map((subject) => <option value={subject.name}>{subject.name}</option>)}
+							</select>
+						</label>
+						<fieldset id="mathTopics" class="math-topics">
+							<legend>数学分析子板块（可多选）</legend>
+							{mathSubjects[0].topics.map((topic) => (
+								<label><input type="checkbox" name="mathTopic" value={topic.name} />{topic.name}</label>
+							))}
+							<small>不选子板块时，文章归入数学分析的综合笔记。</small>
+						</fieldset>
+					</div>
 					<label class="field">
 						<span>标签</span>
 
 						<input
 							id="tags"
 							type="text"
-							placeholder="数学分类：数学分析, 极限, 导数, 积分（可多选，用逗号分隔）"
+							placeholder="例如：学习, 思考（多个标签用逗号分隔）"
 							autocomplete="off"
 						/>
 
@@ -564,7 +580,7 @@ $$"
 			</section>
 		</main>
 
-		<script define:vars={{ apiUrl, postsIndex, rawContents }}>
+		<script define:vars={{ apiUrl, postsIndex, rawContents, mathSubjects }}>
 			const ADMIN_PASSWORD_HASH = "ed9c3bac0b759f98ed2fd1599a76001b5f367f9d6a17e099a88bfcddad27d43c";
 
 			const title =
@@ -581,6 +597,40 @@ $$"
 
 			const tags =
 				document.querySelector("#tags");
+			const mathSubject = document.querySelector("#mathSubject");
+			const mathClassification = document.querySelector("#mathClassification");
+			const mathTopics = document.querySelector("#mathTopics");
+			const mathTopicInputs = [...document.querySelectorAll('[name="mathTopic"]')];
+			const classificationNames = mathSubjects.flatMap((subject) => [subject.name, ...subject.topics.map((topic) => topic.name)]);
+
+			function updateMathClassification() {
+				mathClassification.hidden = category.value !== "数学";
+				mathTopics.hidden = mathSubject.value !== "数学分析";
+				mathTopics.disabled = mathSubject.value !== "数学分析";
+			}
+
+			function restoreMathClassification() {
+				const labels = tags.value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+				mathSubject.value = labels.includes("高等代数") ? "高等代数" : "数学分析";
+				mathTopicInputs.forEach((input) => { input.checked = labels.includes(input.value); });
+				if (category.value === "数学") {
+					tags.value = labels.filter((tag) => !classificationNames.includes(tag)).join(", ");
+				}
+				updateMathClassification();
+			}
+
+			function getPostTags() {
+				const labels = tags.value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+				if (category.value !== "数学") return [...new Set(labels)];
+				return [...new Set([
+					...labels.filter((tag) => !classificationNames.includes(tag)),
+					mathSubject.value,
+					...(mathSubject.value === "数学分析" ? mathTopicInputs.filter((input) => input.checked).map((input) => input.value) : []),
+				])];
+			}
+
+			category.addEventListener("change", updateMathClassification);
+			mathSubject.addEventListener("change", updateMathClassification);
 
 			const content =
 				document.querySelector("#content");
@@ -892,7 +942,7 @@ $$"
 					description: description.value,
 					category: category.value,
 					date: date.value,
-					tags: tags.value,
+					tags: getPostTags().join(", "),
 					content: getContent(),
 				};
 			}
@@ -947,6 +997,7 @@ $$"
 
 					tags.value =
 						draft.tags || "";
+					restoreMathClassification();
 
 					setContent(draft.content || "");
 
@@ -984,6 +1035,8 @@ $$"
 				title,
 				description,
 				category,
+				mathSubject,
+				...mathTopicInputs,
 				date,
 				tags,
 				content,
@@ -1001,6 +1054,7 @@ $$"
 
 
 			loadDraft();
+			updateMathClassification();
 
 
 			// ========================================
@@ -1166,6 +1220,7 @@ $$"
 				tags.value = Array.isArray(fields.tags)
 					? fields.tags.join(", ")
 					: fields.tags || "";
+				restoreMathClassification();
 
 				setContent(body);
 
@@ -1939,7 +1994,7 @@ $$"
 							.toISOString()
 							.slice(0, 10);
 
-					tags.value = "";
+					tags.value = ""; restoreMathClassification();
 
 					setContent("");
 
@@ -2072,14 +2127,7 @@ $$"
 						"";
 
 					try {
-						const tagList =
-							tags.value
-								.split(",")
-								.map(
-									(tag) =>
-										tag.trim()
-								)
-								.filter(Boolean);
+						const tagList = getPostTags();
 
 						const payload = {
 							title:
@@ -2138,7 +2186,7 @@ $$"
 						category.value =
 							"随笔";
 
-						tags.value = "";
+						tags.value = ""; restoreMathClassification();
 
 						setContent("");
 
@@ -2741,6 +2789,12 @@ initWritingFormat({editor:document.querySelector('#content'),color:document.quer
 			rgba(0, 0, 0, 0.035);
 	}
 
+	#mathClassification[hidden], #mathTopics[hidden] { display: none; }
+	.math-topics { margin: 16px 0 24px; padding: 16px; border: 1px solid #deded8; border-radius: 6px; }
+	.math-topics legend { padding: 0 6px; color: #555; font-size: 13px; }
+	.math-topics label { display: inline-flex; align-items: center; gap: 8px; margin-right: 22px; color: #444; font-size: 14px; }
+	.math-topics input { width: auto; }
+	.math-topics small { display: block; margin-top: 12px; color: #777; font-size: 12px; }
 	.two-columns {
 		display: grid;
 
