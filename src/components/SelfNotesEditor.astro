@@ -4,7 +4,7 @@ import notes from '../data/self-notes.json';
 
 <details class="notes-editor">
   <summary>写给自己 <span>管理首页每三秒轮播的话</span></summary>
-  <p>每行一句，按顺序循环展示。删除全部内容后保存，可清空轮播。这里的内容会公开显示在首页。</p>
+  <p>每行一句，可调整行的顺序来整理这些话。首页每三秒随机渐变切换，不显示序号。删除全部内容后保存，可清空轮播。这里的内容会公开显示在首页。</p>
   <label for="selfNotesInput">想对自己说的话</label>
   <textarea id="selfNotesInput" rows="6" placeholder="在这里写下第一句话……">{notes.join('\n')}</textarea>
   <button id="saveSelfNotes" type="button" disabled>保存到首页</button>

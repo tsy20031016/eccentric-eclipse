@@ -6,7 +6,6 @@ import notes from '../data/self-notes.json';
   <div class="heading"><span>TO MYSELF</span><span>写给自己</span></div>
   <p class="note">{notes[0] || '留一点空间，给想对自己说的话。'}</p>
   <div class="controls" hidden={notes.length < 2}>
-    <span class="count">1 / {notes.length}</span>
     <button type="button" aria-label="暂停轮播">暂停</button>
   </div>
 </section>
@@ -16,20 +15,37 @@ import notes from '../data/self-notes.json';
     const notes: string[] = JSON.parse(root.dataset.notes || '[]');
     if (notes.length < 2) return;
     const text = root.querySelector<HTMLElement>('.note')!;
-    const count = root.querySelector<HTMLElement>('.count')!;
     const button = root.querySelector('button')!;
-    let index = 0;
+    let index = Math.floor(Math.random() * notes.length);
+    text.textContent = notes[index];
     let paused = false;
+    let switching = false;
     button.addEventListener('click', () => {
       paused = !paused;
       button.textContent = paused ? '继续' : '暂停';
       button.setAttribute('aria-label', paused ? '继续轮播' : '暂停轮播');
     });
-    window.setInterval(() => {
-      if (paused || document.hidden) return;
-      index = (index + 1) % notes.length;
-      text.textContent = notes[index];
-      count.textContent = `${index + 1} / ${notes.length}`;
+    window.setInterval(async () => {
+      if (paused || document.hidden || switching) return;
+      const next = (index + 1 + Math.floor(Math.random() * (notes.length - 1))) % notes.length;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        index = next;
+        text.textContent = notes[index];
+        return;
+      }
+      switching = true;
+      const fadeOut = text.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 350, easing: 'ease-in', fill: 'forwards' });
+      try {
+        await fadeOut.finished;
+        if (paused || document.hidden) return;
+        index = next;
+        text.textContent = notes[index];
+        fadeOut.cancel();
+        await text.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: 'ease-out' }).finished;
+      } finally {
+        fadeOut.cancel();
+        switching = false;
+      }
     }, 3000);
   });
 </script>
@@ -38,7 +54,7 @@ import notes from '../data/self-notes.json';
   .self-notes { margin: 0 auto 56px; padding: 28px 30px; max-width: 1040px; border-block: 1px solid #e5e5e5; box-sizing: border-box; }
   .heading { display: flex; gap: 16px; align-items: center; font-size: 11px; letter-spacing: .14em; color: #888; }
   .note { font-size: clamp(18px, 2.4vw, 25px); line-height: 1.8; color: #333; margin: 18px 0; min-height: 3.6em; overflow-wrap: anywhere; }
-  .controls { display: flex; justify-content: space-between; align-items: center; color: #999; font-size: 12px; }
+  .controls { display: flex; justify-content: flex-end; align-items: center; color: #999; font-size: 12px; }
   .controls[hidden] { display: none; }
   button { font: inherit; color: #666; background: transparent; border: 1px solid #ddd; padding: 5px 12px; border-radius: 20px; cursor: pointer; }
   @media (max-width: 640px) { .self-notes { margin-inline: 20px; padding: 24px 0; } }
