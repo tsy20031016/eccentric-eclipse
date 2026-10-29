@@ -6,6 +6,20 @@ import ArticleList from "../components/ArticleList.astro";
 const posts = (await getCollection("posts"))
 	.filter((post) => post.data.category === "数学")
 	.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const topics = [
+	{ name: "数学分析", id: "analysis", description: "综合笔记与基础知识。" },
+	{ name: "极限", id: "limits", description: "数列、函数极限与收敛的理解。" },
+	{ name: "导数", id: "derivatives", description: "变化率、微分与求导方法。" },
+	{ name: "积分", id: "integrals", description: "积分理论、计算方法与应用。" },
+];
+const groups = topics.map((topic) => ({
+	...topic,
+	posts: posts.filter((post) => {
+		const labels = post.data.tags.filter((tag) => topics.some((item) => item.name === tag));
+		return labels.length ? labels.includes(topic.name) : topic.name === "数学分析";
+	}),
+}));
 ---
 
 <BaseLayout title="数学 · TSY">
@@ -16,7 +30,20 @@ const posts = (await getCollection("posts"))
 	</header>
 	<main class="content-container">
 		<div class="section-marker"><span>∫</span><span>{posts.length} 篇记录</span></div>
-		<ArticleList posts={posts} showCategory={false} />
+		<nav class="topic-nav" aria-label="数学文章分类">
+			{groups.map((group) => (
+				<a href={`#${group.id}`}><span>{group.name}</span><span class="topic-count">{group.posts.length}</span></a>
+			))}
+		</nav>
+		{groups.map((group) => (
+			<section class="topic-section" id={group.id} aria-labelledby={`${group.id}-title`}>
+				<header class="topic-header">
+					<h2 id={`${group.id}-title`}>{group.name}<span>{group.posts.length} 篇</span></h2>
+					<p>{group.description}</p>
+				</header>
+				<ArticleList posts={group.posts} showCategory={false} />
+			</section>
+		))}
 	</main>
 </BaseLayout>
 
@@ -29,5 +56,14 @@ const posts = (await getCollection("posts"))
 	.content-container { padding-top: 34px; padding-bottom: 100px; }
 	.section-marker { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; color: #8b8b83; font-family: monospace; font-size: 11px; }
 	.section-marker span:first-child { color: #aaa993; font-family: Georgia, serif; font-size: 18px; }
+	.topic-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 42px; }
+	.topic-nav a { display: inline-flex; align-items: center; gap: 16px; padding: 12px 18px; border: 1px solid #e5e5df; border-radius: 6px; color: #333; text-decoration: none; font-size: 14px; }
+	.topic-nav a:hover, .topic-nav a:focus-visible { background: #efefe7; border-color: #aaa993; }
+	.topic-count { color: #8b8b83; font-family: monospace; font-size: 12px; }
+	.topic-section { margin-top: 42px; scroll-margin-top: 100px; }
+	.topic-header { margin-bottom: 22px; }
+	.topic-header h2 { display: flex; align-items: baseline; gap: 16px; margin: 0; color: #171717; font-size: 25px; font-weight: 400; }
+	.topic-header h2 span { color: #8b8b83; font-size: 12px; }
+	.topic-header p { margin: 10px 0 0; color: #777; font-size: 13px; line-height: 1.8; }
 	@media (max-width: 600px) { .page-header { padding: 68px 20px 58px; } .content-container { padding: 28px 20px 80px; } }
 </style>

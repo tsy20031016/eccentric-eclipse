@@ -4,6 +4,7 @@ description: "验证 Markdown 数学公式与富文本格式"
 date: "2026-08-31"
 category: "数学"
 tags:
+  - "数学分析"
   - "Markdown"
   - "KaTeX"
 ---
