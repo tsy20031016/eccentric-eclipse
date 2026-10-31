@@ -1,5 +1,7 @@
 ---
 import Header from "../components/Header.astro";
+import MathManuscript from "../components/MathManuscript.astro";
+import "../styles/paper.css";
 import SelfNotes from "../components/SelfNotes.astro";
 import { getCollection } from "astro:content";
 import ArticleList from "../components/ArticleList.astro";
@@ -31,12 +33,12 @@ const writeUrl = `${base}write/`;
 			name="description"
 			content="TSY 的个人空间，记录数学、AI、技术与生活。"
 		/>
-		<meta name="theme-color" content="#fafafa" />
+		<meta name="theme-color" content="#fbfaf6" />
 
 		<title>TSY · Mathematics & Thoughts</title>
 	</head>
 
-	<body>
+	<body class="blog-home">
 		<Header />
 
 		<main>
@@ -45,12 +47,7 @@ const writeUrl = `${base}write/`;
 			========================================= -->
 
 			<section class="hero">
-				<div class="math-scatter" aria-hidden="true">
-					<span class="scatter-1">∑</span>
-					<span class="scatter-2">lim x → 0</span>
-					<span class="scatter-3">ℝ</span>
-					<span class="scatter-4">∂</span>
-				</div>
+				<div class="hero-manuscript"><MathManuscript /></div>
 				<div class="hero-inner">
 					<p class="eyebrow">
 						MATHEMATICS · THOUGHTS · LIFE
@@ -65,7 +62,7 @@ const writeUrl = `${base}write/`;
 					<p class="hero-description">
 						这里是 TSY 的个人空间。
 						<br />
-						记录数学学习、技术折腾，
+						记录数学学习、技术折腾，<br />
 						以及那些值得留下来的想法。
 					</p>
 
@@ -83,11 +80,9 @@ const writeUrl = `${base}write/`;
 						留下今天的痕迹 <span aria-hidden="true">↗</span>
 					</a>
 				</div>
-
-				<div class="hero-mark">
-					<span>∫</span>
-				</div>
 			</section>
+
+
 
 			<SelfNotes />
 
@@ -286,19 +281,7 @@ const writeUrl = `${base}write/`;
 			     Quote
 			========================================= -->
 
-			<section class="quote-section">
-	             <div class="quote-symbol">“</div>
-
-	             <blockquote>
-		             Some things
-		             <br />
-		             are worth keeping.
-	             </blockquote>
-
-	             <p>
-		             Notes from an ongoing journey.
-	             </p>
-            </section>
+			<SelfNotes closing />
 		</main>
 
 
@@ -335,11 +318,12 @@ const writeUrl = `${base}write/`;
 
 	:global(html) {
 		scroll-behavior: smooth;
+        overflow-x: clip;
 	}
 
 	:global(body) {
 		margin: 0;
-		background: #fafafa;
+		background-color: #fbfaf6;
 		color: #202020;
 		font-family:
 			-apple-system,
@@ -356,7 +340,7 @@ const writeUrl = `${base}write/`;
 	}
 
 	main {
-		max-width: 1100px;
+		max-width: 1376px;
 		margin: 0 auto;
 		padding: 0 32px;
 	}
@@ -366,9 +350,15 @@ const writeUrl = `${base}write/`;
 	   Hero
 	================================ */
 
+	:global(body.blog-home .header-inner) { max-width: 1376px; padding: 18px 32px; }
+    :global(body.blog-home .logo) { font-family: Georgia, serif; font-weight: 400; font-size: 27px; }
+
 	.hero {
 		position: relative;
-		min-height: 610px;
+		min-height: 700px;
+		height: clamp(700px, 54vw, 840px);
+        margin-inline: calc(50% - 50vw);
+        padding: 0 max(32px, calc((100vw - 1312px) / 2));
 
 		display: flex;
 		align-items: center;
@@ -380,37 +370,19 @@ const writeUrl = `${base}write/`;
 
 	.hero::before {
 		position: absolute;
-		inset: 22px 0 auto;
+		inset: 0 0 auto;
 		height: 1px;
-		background: #e5e5df;
+		background: transparent;
 		content: "";
 	}
 
-	.math-scatter {
-		position: absolute;
-		inset: 0;
-		color: #a2a08e;
-		font-family: Georgia, serif;
-		font-size: 20px;
-		opacity: 0.25;
-		pointer-events: none;
-	}
-
-	.math-scatter span {
-		position: absolute;
-		opacity: 0.3;
-	}
-
-	.scatter-1 { top: 20%; right: 17%; font-size: 34px; transform: rotate(12deg); }
-	.scatter-2 { top: 67%; left: 12%; font-size: 14px; transform: rotate(-7deg); }
-	.scatter-3 { top: 79%; right: 8%; font-size: 28px; transform: rotate(-11deg); }
-	.scatter-4 { top: 34%; left: 5%; font-size: 24px; transform: rotate(9deg); }
+	.hero-manuscript { position: absolute; inset: 0; }
 
 	.hero-inner {
 		position: relative;
 		z-index: 1;
-		max-width: 760px;
-		padding: 100px 0 120px;
+		max-width: 560px;
+		padding: 0;
 	}
 
 	.eyebrow {
@@ -431,20 +403,23 @@ const writeUrl = `${base}write/`;
 			"Times New Roman",
 			serif;
 
-		font-size: clamp(54px, 8vw, 92px);
-		font-weight: 400;
-		line-height: 1.08;
+		font-size: clamp(54px, 5.2vw, 80px);
+        font-family: Georgia, "Songti SC", SimSun, serif;
+        font-weight: 400;
+		color: #292822;
+		line-height: 1.25;
 		letter-spacing: -0.055em;
 	}
 
 	.hero-description {
-		margin: 38px 0 0;
+		margin: 30px 0 0;
 
-		max-width: 560px;
+		max-width: 410px;
+        font-family: "Songti SC", SimSun, serif;
 
 		color: #707070;
-		font-size: 16px;
-		line-height: 1.9;
+		font-size: 21px;
+		line-height: 1.85;
 	}
 
 	.hero-actions {
@@ -456,7 +431,8 @@ const writeUrl = `${base}write/`;
 	}
 
 	.writing-link {
-		margin-top: 20px;
+        display: flex; width: fit-content;
+		margin-top: 16px;
 	}
 
 	.primary-button {
@@ -504,21 +480,7 @@ const writeUrl = `${base}write/`;
 		border-color: #111;
 	}
 
-	.hero-mark {
-		position: absolute;
-		right: -20px;
-		bottom: 10px;
 
-		font-family: Georgia, serif;
-		font-size: 320px;
-		font-weight: 400;
-		line-height: 1;
-
-		color: #eeeeee;
-
-		user-select: none;
-		pointer-events: none;
-	}
 
 
 	/* ==============================
@@ -526,7 +488,7 @@ const writeUrl = `${base}write/`;
 	================================ */
 
 	section {
-		padding: 108px 0;
+		padding: 82px 0;
 	}
 
 	.section-label {
@@ -553,6 +515,7 @@ const writeUrl = `${base}write/`;
 	}
 
 	.thinking-section {
+        padding-block: 36px;
 		display: grid;
 		grid-template-columns: 1fr 2fr;
 		gap: 60px;
@@ -564,13 +527,14 @@ const writeUrl = `${base}write/`;
 	}
 
 	.thinking-list {
+        font-size: 16px;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 10px 34px;
 		align-content: start;
 		padding-top: 2px;
 		font-family: Georgia, "Times New Roman", serif;
-		font-size: 25px;
+		font-size: 16px;
 	}
 
 	.thinking-list span::before {
@@ -654,6 +618,7 @@ const writeUrl = `${base}write/`;
 	}
 
 	.category-notes-section {
+        padding-block: 48px 64px;
 		border-bottom: 1px solid #e5e5e5;
 	}
 
@@ -662,6 +627,9 @@ const writeUrl = `${base}write/`;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 24px;
 	}
+
+	.category-note { padding: 0; }
+    .category-note > a { color: #000; }
 
 	.category-note h2 {
 		margin: 0 0 18px;
@@ -961,41 +929,6 @@ const writeUrl = `${base}write/`;
 	   Quote
 	================================ */
 
-	.quote-section {
-		padding: 180px 0;
-
-		text-align: center;
-	}
-
-	.quote-symbol {
-		margin-bottom: 15px;
-
-		font-family: Georgia, serif;
-		font-size: 70px;
-		line-height: 1;
-
-		color: #ddd;
-	}
-
-	blockquote {
-		margin: 0;
-
-		font-family: Georgia, "Times New Roman", serif;
-		font-size: clamp(38px, 5vw, 60px);
-		font-weight: 400;
-		line-height: 1.25;
-		letter-spacing: -0.04em;
-	}
-
-	.quote-section p {
-		margin: 30px 0 0;
-
-		font-family: monospace;
-		font-size: 10px;
-		letter-spacing: 0.12em;
-
-		color: #aaa;
-	}
 
 
 	/* ==============================
@@ -1075,29 +1008,31 @@ const writeUrl = `${base}write/`;
 		}
 
 		.hero {
-			min-height: 600px;
+			height: auto;
+            min-height: 740px;
+            margin-inline: -20px;
+            padding-inline: 20px;
 		}
 
 		.hero-inner {
-			padding: 80px 0 100px;
+			padding: 55px 0 300px;
 		}
 
 		.hero h1 {
-			font-size: clamp(48px, 15vw, 70px);
+			font-size: clamp(42px, 12vw, 60px);
 		}
 
 		.hero-description {
 			font-size: 14px;
 		}
 
-		.hero-mark {
-			right: -30px;
-			bottom: 40px;
-			font-size: 200px;
-		}
+		.hero-manuscript { left: 0; right: 0; top: auto; height: 270px; bottom: 0; opacity: 1; }
+		.hero-inner { padding-bottom: 300px; }
+        .hero { padding: 0 20px; }
+		.hero-description { max-width: 350px; }
 
 		section {
-			padding: 90px 0;
+			padding: 64px 0;
 		}
 
 		.about-grid {
@@ -1161,9 +1096,6 @@ const writeUrl = `${base}write/`;
 			gap: 25px;
 		}
 
-		.quote-section {
-			padding: 120px 0;
-		}
 
 		.footer-inner {
 			align-items: flex-start;

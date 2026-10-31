@@ -1,5 +1,7 @@
 ---
 import Header from "../components/Header.astro";
+import MathManuscript from "../components/MathManuscript.astro";
+import "../styles/paper.css";
 import Footer from "../components/Footer.astro";
 import "katex/dist/katex.min.css";
 
@@ -25,14 +27,7 @@ const {
 	</head>
 
 	<body>
-		<div class="site-math-field" aria-hidden="true">
-			<span class="math-note note-1">∑</span>
-			<span class="math-note note-2">∂</span>
-			<span class="math-note note-3">ε → 0</span>
-			<span class="math-note note-4">ℝ</span>
-			<span class="math-note note-5">∫ f(x) dx</span>
-			<span class="math-note note-6">∀x ∈ A</span>
-		</div>
+		<div class="site-math-field"><MathManuscript quiet /></div>
 		<Header />
 
 		<main>
@@ -49,7 +44,7 @@ const {
 	}
 
 	:root {
-		--paper: #fbfbf8;
+		--paper: #fbfaf6;
 		--ink: #171717;
 		--muted: #77776f;
 		--rule: #e4e4dd;
@@ -57,12 +52,12 @@ const {
 	}
 
 	html {
-		background: #fafafa;
+		background: #fbfaf6;
 	}
 
 	body {
 		margin: 0;
-		background: var(--paper);
+		background-color: var(--paper);
 		color: #171717;
 		font-family:
 			-apple-system,
@@ -89,19 +84,4 @@ const {
 		pointer-events: none;
 	}
 
-	.math-note {
-		position: absolute;
-		color: #8c8c78;
-		font-family: Georgia, "Times New Roman", serif;
-		font-size: clamp(18px, 2.4vw, 32px);
-		opacity: 0.075;
-		user-select: none;
-	}
-
-	.note-1 { top: 18%; left: 7%; transform: rotate(-12deg); }
-	.note-2 { top: 42%; right: 8%; transform: rotate(9deg); }
-	.note-3 { top: 72%; left: 5%; transform: rotate(5deg); font-size: clamp(13px, 1.5vw, 20px); }
-	.note-4 { top: 86%; right: 14%; transform: rotate(-8deg); }
-	.note-5 { top: 31%; left: 88%; transform: rotate(-5deg); font-size: clamp(13px, 1.6vw, 22px); }
-	.note-6 { top: 61%; right: 5%; transform: rotate(12deg); font-size: clamp(12px, 1.4vw, 19px); }
 </style>

@@ -1,0 +1,38 @@
+---
+interface Props { quiet?: boolean }
+const { quiet = false } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+<div class:list={['manuscript', { quiet }]} aria-hidden="true">
+  <img src={base + 'images/analysis-manuscript.webp'} alt="" width="1536" height="1024" decoding="async" loading={quiet ? 'lazy' : 'eager'} fetchpriority={quiet ? 'auto' : 'high'} />
+  <div class="paper-dots"></div>
+  <svg class="connecting-notes" viewBox="0 0 1536 650" preserveAspectRatio="xMidYMid slice" fill="none">
+    <g stroke="currentColor" stroke-width=".65">
+      <path d="M -60 512 C 115 480 160 595 330 568 S 573 404 719 396 S 1004 520 1160 423 S 1404 320 1600 360" />
+      <path d="M -50 151 C 148 70 280 61 443 101 S 677 218 826 174 S 1070 50 1230 87" stroke-dasharray="4 8" />
+      <path d="M 55 650 C 132 541 293 525 429 580 S 676 660 813 548" stroke-dasharray="3 8" />
+      <path d="M 63 476 V 622 M 27 589 H 283" opacity=".6" />
+    </g>
+    <g fill="currentColor">
+      <circle cx="330" cy="568" r="2" />
+      <circle cx="719" cy="396" r="2" />
+    </g>
+    <g fill="currentColor" font-family="Georgia, serif" font-style="italic" font-size="18">
+      <text x="481" y="110">ε → 0</text>
+      <text x="36" y="347" transform="rotate(-8 36 347)">∀ε &gt; 0</text>
+      <text x="357" y="609">aₙ → L</text>
+    </g>
+  </svg>
+</div>
+<style>
+  .manuscript { position: absolute; inset: 0; pointer-events: none; user-select: none; overflow: hidden; }
+  img { position: absolute; left: -7%; width: 110%; max-width: none; height: 100%; object-fit: cover; object-position: center 43%; opacity: .76; mix-blend-mode: multiply; mask-image: linear-gradient(180deg, transparent, #000 6%, #000 89%, transparent); }
+  .paper-dots { position: absolute; inset: 0; background: radial-gradient(#8b897d .65px, transparent .8px) 0 0 / 22px 22px; opacity: .19; mask-image: radial-gradient(ellipse at 5% 90%, #000, transparent 43%), radial-gradient(ellipse at 46% 4%, #000, transparent 27%); }
+  .connecting-notes { position: absolute; inset: 0; width: 100%; height: 100%; color: #858174; opacity: .21; mask-image: radial-gradient(ellipse 340px 260px at 23% 44%, transparent 45%, #000 100%); }
+  .quiet { opacity: .22; mask-image: linear-gradient(90deg, #000, transparent 27%, transparent 73%, #000); }
+  @media (max-width: 700px) {
+    img { left: auto; right: -8%; width: auto; height: 100%; aspect-ratio: 3 / 2; object-fit: contain; opacity: .72; }
+    .connecting-notes { opacity: .12; }
+    .quiet { display: none; }
+  }
+</style>

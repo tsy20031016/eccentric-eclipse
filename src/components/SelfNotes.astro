@@ -1,13 +1,18 @@
 ---
-import storedNotes from '../data/self-notes.json';
+import selfNotes from '../data/self-notes.json';
+import closingNotes from '../data/closing-notes.json';
+interface Props { closing?: boolean }
+const { closing = false } = Astro.props;
+const storedNotes = closing ? closingNotes : selfNotes;
+const label = closing ? '页尾文字' : '写给自己';
 
 // Keep author numbering in storage, but omit list markers from public text.
 const notes = storedNotes.map(note => note.replace(/^\s*(?:\d+[.．](?!\d)|\d+[、)）]|\(\d+\)|（\d+）)\s*/u, ''));
 ---
 
-<section class="self-notes" aria-label="写给自己" data-notes={JSON.stringify(notes)}>
-  <div class="heading"><span>TO MYSELF</span><span>写给自己</span></div>
-  <p class="note">{notes[0] || '留一点空间，给想对自己说的话。'}</p>
+<section class:list={["self-notes", { closing }]} aria-label={label} data-notes={JSON.stringify(notes)}>
+  {!closing && <div class="heading"><span>TO MYSELF</span><span>{label}</span></div>}
+  <p class="note">{notes[0] || (closing ? '留一点空间，给值得留下的话。' : '留一点空间，给想对自己说的话。')}</p>
   <div class="controls" hidden={notes.length < 2}>
     <button type="button" aria-label="暂停轮播">暂停</button>
   </div>
@@ -55,6 +60,8 @@ const notes = storedNotes.map(note => note.replace(/^\s*(?:\d+[.．](?!\d)|\d+[�
 
 <style>
   .self-notes { margin: 0 auto 56px; padding: 28px 30px; max-width: 1040px; border-block: 1px solid #e5e5e5; box-sizing: border-box; }
+  .closing { margin-top: 90px; padding-block: 48px; }
+  .closing .note { max-width: 800px; margin: 28px auto; font-family: Georgia, "Songti SC", SimSun, serif; font-size: clamp(19px, 2vw, 26px); line-height: 2; text-align: left; }
   .heading { display: flex; gap: 16px; align-items: center; font-size: 11px; letter-spacing: .14em; color: #888; }
   .note { font-size: clamp(18px, 2.4vw, 25px); line-height: 1.8; color: #333; margin: 18px 0; min-height: 3.6em; overflow-wrap: anywhere; }
   .controls { display: flex; justify-content: flex-end; align-items: center; color: #999; font-size: 12px; }

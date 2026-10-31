@@ -1,4 +1,4 @@
-# TSY Blog Worker v7 — 部署说明
+# TSY Blog Worker v8 — 部署说明
 
 写作后台 `src/pages/write.astro` 会请求：
 
@@ -14,7 +14,8 @@
 | `/projects/aegis-agent/documents/:slug` | DELETE | 删除非核心项目章节 |
 | `/projects/upload` | POST | 上传 Aegis Agent 项目图片 |
 | `/self-notes` | GET / PUT | 读取 / 保存写给自己的话 |
-| `/version` | GET | 确认已部署 v7 |
+| `/closing-notes` | GET / PUT | 读取 / 保存首页页尾段落 |
+| `/version` | GET | 确认已部署 v8 |
 
 线上旧 Worker **只处理发布和传图**。编辑 / 删除会打到 `/posts/update`、`/posts/delete`，旧代码返回纯文本 `Not Found`，页面就会报网络或接口失败。
 
@@ -40,7 +41,7 @@ npx wrangler deploy
 
 https://tsy-blog-api.1468709192.workers.dev/version
 
-应看到 JSON：`"version": 7`，并列出写给自己、Aegis 子文档及章节管理接口。GitHub Pages 前端还需单独构建部署。
+应看到 JSON：`"version": 8`，并列出写给自己、Aegis 子文档及章节管理接口。GitHub Pages 前端还需单独构建部署。
 
 项目稿保存在 `src/content/projects/aegis-agent.md`，项目图片保存在 `public/images/projects/aegis-agent/`。编辑入口位于 `/write/projects/aegis-agent/`，登录共用普通写作后台的浏览器登录状态。
 
@@ -69,4 +70,12 @@ https://tsy-blog-api.1468709192.workers.dev/version
 - 版本冲突返回 409，避免覆盖其他设备上的更新。
 
 上线时需同时发布 Astro 网站并部署本目录 Worker（`npx wrangler deploy --config worker/wrangler.toml`），
-`/version` 应返回版本 7。后台保存会触发仓库现有 GitHub Pages 构建，完成后首页更新。
+`/version` 应返回版本 8。后台保存会触发仓库现有 GitHub Pages 构建，完成后首页更新。
+
+## 首页页尾寄语（v8）
+
+写作后台新增「写在最后」，每行一段，独立保存到 `src/data/closing-notes.json`。首页只有一段时静态显示，多段时沿用自我寄语的每 8 秒轮播与暂停功能。每段最多 500 字，最多 100 段。
+
+`GET /closing-notes` 和 `PUT /closing-notes` 使用与 `/self-notes` 相同的数据格式 `{ notes, sha }`、写入凭据和版本冲突检查。两处草稿独立保存在浏览器中。
+
+此功能需要同时发布前端、数据文件和 v8 Worker；保存后等待 GitHub Pages 构建完成生效。

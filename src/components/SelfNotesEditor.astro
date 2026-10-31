@@ -1,22 +1,31 @@
 ---
-import notes from '../data/self-notes.json';
+import selfNotes from '../data/self-notes.json';
+import closingNotes from '../data/closing-notes.json';
+interface Props { closing?: boolean }
+const { closing = false } = Astro.props;
+const notes = closing ? closingNotes : selfNotes;
+const kind = closing ? 'closing-notes' : 'self-notes';
+const label = closing ? '页尾文字' : '写给自己';
+const inputId = `${kind}-input`;
 ---
 
-<details class="notes-editor">
-  <summary>写给自己 <span>管理首页每八秒轮播的话</span></summary>
-  <p>每行一句，可调整行的顺序或添加 1.、2. 等编号来整理。首页会隐藏开头编号，每八秒随机渐变切换。删除全部内容后保存，可清空轮播。这里的内容会公开显示在首页。</p>
-  <label for="selfNotesInput">想对自己说的话</label>
-  <textarea id="selfNotesInput" rows="6" placeholder="在这里写下第一句话……">{notes.join('\n')}</textarea>
-  <button id="saveSelfNotes" type="button" disabled>保存到首页</button>
-  <p id="selfNotesStatus" role="status">打开后读取最新内容。</p>
+<details class="notes-editor" data-kind={kind}>
+  <summary>{label} <span>{closing ? "管理首页页尾的段落，每行一段" : "管理首页每八秒轮播的话"}</span></summary>
+  <p>{closing ? "每行一段，可以保存一段或多段文字。" : "每行一句，可调整行的顺序或添加 1.、2. 等编号来整理。"}首页会隐藏开头编号，每八秒随机渐变切换。删除全部内容后保存，可清空轮播。这里的内容会公开显示在首页。</p>
+  <label for={inputId}>{closing ? "让你觉得有力量的文字" : "想对自己说的话"}</label>
+  <textarea id={inputId} rows="6" placeholder="在这里写下第一句话……">{notes.join('\n')}</textarea>
+  <button type="button" disabled>保存到首页</button>
+  <p role="status">打开后读取最新内容。</p>
 </details>
 
 <script>
-  const root = document.querySelector<HTMLDetailsElement>('.notes-editor')!;
+  document.querySelectorAll<HTMLDetailsElement>('.notes-editor').forEach((root) => {
   const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
   const save = root.querySelector<HTMLButtonElement>('button')!;
   const status = root.querySelector<HTMLElement>('[role="status"]')!;
-  const endpoint = 'https://tsy-blog-api.1468709192.workers.dev/self-notes';
+  const kind = root.dataset.kind!;
+  const endpoint = `https://tsy-blog-api.1468709192.workers.dev/${kind}`;
+  const draftKey = `tsy-${kind}-draft`;
   let loaded = false;
   let loading = false;
   let sha: string | null = null;
@@ -34,16 +43,17 @@ import notes from '../data/self-notes.json';
     status.textContent = '正在读取最新内容……';
     try {
       const data = await readResponse(await fetch(endpoint, { cache: 'no-store' }));
+      if (!Array.isArray(data.notes)) throw new Error("内容接口尚未就绪，请更新后台服务后重试。");
       sha = data.sha;
-      input.value = localStorage.getItem('tsy-self-notes-draft') ?? data.notes.join('\n');
+      input.value = localStorage.getItem(draftKey) ?? data.notes.join('\n');
       loaded = true;
       save.disabled = false;
-      status.textContent = localStorage.getItem('tsy-self-notes-draft') !== null ? '已恢复本地草稿，保存后同步到首页。' : '已读取最新内容。';
+      status.textContent = localStorage.getItem(draftKey) !== null ? '已恢复本地草稿，保存后同步到首页。' : '已读取最新内容。';
     } catch (error) { status.textContent = `${(error as Error).message} 关闭后重新展开可重试。`; }
     finally { input.disabled = false; loading = false; }
   });
   input.addEventListener('input', () => {
-    localStorage.setItem('tsy-self-notes-draft', input.value);
+    localStorage.setItem(draftKey, input.value);
     status.textContent = '草稿已保存在本机，尚未同步到首页。';
   });
   save.addEventListener('click', async () => {
@@ -62,10 +72,11 @@ import notes from '../data/self-notes.json';
         body: JSON.stringify({ notes, sha }),
       }));
       sha = data.sha;
-      localStorage.removeItem('tsy-self-notes-draft');
+      localStorage.removeItem(draftKey);
       status.textContent = '已保存，网站重新构建后首页生效。';
     } catch (error) { status.textContent = (error as Error).message; }
     finally { save.disabled = false; input.disabled = false; }
+  });
   });
 </script>
 
