@@ -15,6 +15,22 @@ const posts = (await getCollection("posts"))
 		<p class="intro">关于模型、工具，以及把想法做成现实的尝试。</p>
 	</header>
 	<main class="content-container">
+		<a
+			class="gathering-entry"
+			href="https://gathering.g9jvsbg9mv.chatgpt.site"
+			target="_blank"
+			rel="noopener noreferrer"
+			aria-label="查看 Gathering：汇聚 AI 前沿技术（在新标签页打开）"
+		>
+			<div class="gathering-copy">
+				<p class="gathering-eyebrow"><span aria-hidden="true">↗</span> GATHERING AI FRONTIERS</p>
+				<h2>Gathering <span>汇聚 AI 前沿技术</span></h2>
+				<p class="gathering-description">从公司官网、研究成果到开源社区，发现值得借鉴的 AI 技术与应用思路。</p>
+				<div class="gathering-tags"><span>公司技术</span><span>研究成果</span><span>开源项目</span></div>
+			</div>
+			<span class="gathering-action">查看 Gathering <span aria-hidden="true">↗</span><small>在新标签页打开</small></span>
+		</a>
+
 		<div class="section-marker"><span>λ</span><span>{posts.length} 篇记录</span></div>
 		<ArticleList posts={posts} showCategory={false} />
 	</main>
@@ -30,4 +46,20 @@ const posts = (await getCollection("posts"))
 	.section-marker { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; color: #8b8b83; font-family: monospace; font-size: 11px; }
 	.section-marker span:first-child { color: #aaa993; font-family: Georgia, serif; font-size: 18px; }
 	@media (max-width: 600px) { .page-header { padding: 68px 20px 58px; } .content-container { padding: 28px 20px 80px; } }
+
+	.gathering-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 30px; margin-bottom: 38px; padding: 28px; border: 1px solid #dce1d3; border-radius: 8px; background: #f0f2e9; color: inherit; text-decoration: none; transition: border-color .2s, background .2s; }
+	.gathering-entry:hover { border-color: #a8b498; background: #eaeedf; }
+	.gathering-entry:focus-visible { outline: 2px solid #72835e; outline-offset: 5px; }
+	.gathering-eyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: #738168; font-size: 9px; letter-spacing: .15em; }
+	.gathering-eyebrow > span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: #e46640; color: #fff; font-size: 18px; line-height: 1; }
+	.gathering-entry h2 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px 14px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 31px; font-weight: 400; letter-spacing: -.025em; }
+	.gathering-entry h2 > span { color: #647158; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 12px; letter-spacing: 0; }
+	.gathering-description { max-width: 470px; margin: 14px 0 16px; color: #68705f; font-size: 13px; line-height: 1.9; }
+	.gathering-tags { display: flex; flex-wrap: wrap; gap: 8px 16px; color: #7e8974; font-size: 10px; }
+	.gathering-tags > span::before { content: "·"; margin-right: 6px; color: #9ca88f; }
+	.gathering-action { white-space: nowrap; color: #425537; font-size: 12px; }
+	.gathering-action > span { margin-left: 12px; color: #8a9979; }
+	.gathering-action small { display: block; margin-top: 8px; color: #8c9582; font-size: 10px; }
+	@media (max-width: 600px) { .gathering-entry { grid-template-columns: minmax(0, 1fr); gap: 22px; margin-bottom: 30px; padding: 23px 20px; } .gathering-entry h2 { font-size: 29px; } .gathering-action { display: flex; align-items: center; gap: 8px; } .gathering-action > span { margin-left: 0; } .gathering-action small { margin: 0 0 0 auto; } }
+	@media (prefers-reduced-motion: reduce) { .gathering-entry { transition: none; } }
 </style>
