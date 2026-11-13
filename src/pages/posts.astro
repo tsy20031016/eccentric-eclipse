@@ -49,25 +49,27 @@ const tags = [...tagCounts.entries()]
 	<header class="page-header">
 		<p class="eyebrow">WRITING</p>
 
-		<h1>文章</h1>
-
-		<p class="intro">
-			记录数学、技术，以及生活中那些值得留下来的想法。<a href={`${base}diary/`}>私密日记，请解锁查看 →</a>
-		</p>
-	</header>
-
-	<main class="post-container">
-		<div class="toolbar">
+		<div class="title-row">
+			<h1>文章</h1>
 			<div class="search-box">
-				<span class="search-icon">⌕</span>
+				<span class="search-icon" aria-hidden="true">⌕</span>
 
 				<input
 					id="searchInput"
+                    aria-label="搜索文章"
 					type="search"
 					placeholder="搜索文章…"
 					autocomplete="off"
 				/>
 			</div>
+		</div>
+
+		<p class="intro">
+			记录数学、技术，以及生活中那些值得留下来的想法。
+            <a href={`${base}diary/`}>私密日记，请解锁查看 →</a>
+		</p>
+		<div class="toolbar">
+
 
 			<div class="filter-row" id="categoryRow">
 				<button type="button" class="chip active" data-category="">
@@ -100,6 +102,10 @@ const tags = [...tagCounts.entries()]
 				</div>
 			)}
 		</div>
+	</header>
+
+	<main class="post-container">
+
 
 		<div class="post-count">
 			<span>ALL POSTS</span>
@@ -309,13 +315,21 @@ const tags = [...tagCounts.entries()]
 	.page-header {
 		max-width: 900px;
 		margin: 0 auto;
-		padding: 82px 24px 66px;
+		padding: 82px 24px 42px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+        gap: 20px 32px;
 		background: linear-gradient(90deg, rgba(239, 239, 231, 0.55), transparent 58%);
 		border-bottom: 1px solid #e5e5e5;
 	}
 
+	.title-row { display: contents; }
+    .title-row h1 { grid-column: 1; grid-row: 2; }
+    .title-row .search-box { grid-column: 2; grid-row: 2; align-self: center; }
+
 	.eyebrow {
-		margin: 0 0 20px;
+		margin: 0;
+        grid-column: 1 / -1;
 		font-size: 12px;
 		letter-spacing: 0.18em;
 		color: #888;
@@ -332,11 +346,16 @@ const tags = [...tagCounts.entries()]
 
 	.intro {
 		max-width: 520px;
-		margin: 28px 0 0;
+		margin: 0;
+        grid-column: 1;
+        grid-row: 3;
 		color: #777;
 		font-size: 16px;
 		line-height: 1.8;
 	}
+
+	.intro a { display: block; width: fit-content; margin-top: 8px; color: inherit; text-decoration: none; }
+    .intro a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
 	.post-container {
 		max-width: 900px;
@@ -350,12 +369,16 @@ const tags = [...tagCounts.entries()]
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
-		padding: 34px 0 6px;
+		padding: 0;
+        grid-column: 2;
+        grid-row: 3;
+        align-self: start;
 	}
 
 	.search-box {
 		position: relative;
-		max-width: 420px;
+		width: 100%;
+        flex-shrink: 0;
 	}
 
 	.search-icon {
@@ -573,6 +596,12 @@ const tags = [...tagCounts.entries()]
 	}
 
 	@media (max-width: 600px) {
+        .page-header { grid-template-columns: minmax(96px, .75fr) minmax(0, 1.25fr); gap: 20px; }
+        .intro { grid-column: 1 / -1; }
+        .toolbar { grid-column: 1 / -1; grid-row: 4; }
+        .search-box { width: 100%; min-width: 0; }
+        .search-box input { padding-left: 32px; padding-right: 8px; }
+        .search-icon { left: 10px; }
 		.page-header {
 			padding: 70px 20px 60px;
 		}
