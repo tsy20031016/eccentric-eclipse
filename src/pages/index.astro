@@ -363,7 +363,7 @@ const writeUrl = `${base}write/`;
 
 	.hero {
 		position: relative;
-		min-height: 700px;
+		min-height: max(700px, 33.334cqw);
 		height: clamp(700px, 54vw, 840px);
         margin-inline: calc(50% - 50cqw);
         padding: 0 max(32px, calc((100cqw - 1312px) / 2));
@@ -1010,6 +1010,17 @@ const writeUrl = `${base}write/`;
 	   Mobile
 	================================ */
 
+    @media (max-width: 360px) {
+        :global(body.blog-home .header-inner) { padding-inline: 16px; }
+        :global(body.blog-home header nav) { gap: 8px; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+        :global(body.blog-home header nav a) { font-size: 10px; }
+    }
+
+    @media (min-width: 701px) and (max-width: 1000px) {
+        .hero { height: auto; min-height: 900px; }
+        .hero-inner { padding: 64px 0 420px; }
+        .hero-manuscript { top: auto; bottom: 0; height: 420px; }
+    }
 	@media (max-width: 700px) {
 		main {
 			padding: 0 20px;
