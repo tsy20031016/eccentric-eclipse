@@ -11,15 +11,8 @@ const allPosts = (await getCollection("posts"))
 .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 
 
-const englishPreviews: Record<string, { title: string; description: string }> = {
-  'judging-sequence-limits': { title: 'Sequence Limits: Recognize the Pattern, Choose the Method', description: 'From the Cauchy criterion and monotone sequences to limsup, liminf, and Stolz: choosing a method by understanding the sequence.' },
-  'real-completeness-and-topology': { title: 'From Nested Intervals to Topology: Understanding the Real Numbers', description: 'Exploring completeness, finite covers, accumulation points, and connectedness through the continuity of the real line.' },
-  'properties-of-limits': { title: 'Properties of Limits: From Calculation to a Way of Thinking', description: 'Understanding uniqueness and arithmetic rules by turning complicated errors into quantities we can control.' },
-  'understanding-limits': { title: 'Understanding Limits: From Intuition to Precision', description: 'From the idea of getting closer to epsilon–delta definitions and the sequential criterion for limits.' },
-  '关于我对ai的一些杂谈2026-9-1788194845921': { title: 'Some Thoughts on AI — September 2026', description: 'Reflections on AI as a tool for building, thinking, and exploring ideas.' },
-};
 const categories: Record<string, string> = { '数学': 'Mathematics', '日记': 'Diary', '技术': 'Technology', '思考': 'Thoughts', '生活': 'Life' };
-const localize = (post: (typeof allPosts)[number]) => ({ ...post, data: { ...post.data, ...englishPreviews[post.id], category: categories[post.data.category] ?? post.data.category } });
+const localize = (post: (typeof allPosts)[number]) => ({ ...post, data: { ...post.data, category: categories[post.data.category] ?? post.data.category } });
 
 const posts = allPosts.slice(0, 4).map(localize);
 
@@ -202,9 +195,9 @@ const writeUrl = `${base}write/`;
 								</div>
 
 								<div class="post-content">
-									<h3>{post.data.title}</h3>
+									<h3 lang="zh-CN">{post.data.title}</h3>
 
-									<p>
+									<p lang="zh-CN">
 										{post.data.description}
 									</p>
 								</div>

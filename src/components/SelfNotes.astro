@@ -12,7 +12,7 @@ const notes = storedNotes.map(note => note.replace(/^\s*(?:\d+[.ï¼Ž](?!\d)|\d+[ã
 
 <section class:list={["self-notes", { closing }]} aria-label={label} data-notes={JSON.stringify(notes)}>
   {!closing && <div class="heading"><span>TO MYSELF</span></div>}
-  <p class="note">{notes[0] || (closing ? 'A little space for words worth keeping.' : 'A little space for words to myself.')}</p>
+  <p class="note" lang="zh-CN">{notes[0] || (closing ? 'A little space for words worth keeping.' : 'A little space for words to myself.')}</p>
   <div class="controls" hidden={notes.length < 2}>
     <button type="button" aria-label="Pause rotation">Pause</button>
   </div>

@@ -23,7 +23,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 				<span>{english ? `${readingTime(post.body ?? "")} min read` : `约 ${readingTime(post.body ?? "")} 分钟`}</span>
 			</div>
 			<div class="article-main">
-				<h2>{post.data.title}</h2>
+				<h2 lang="zh-CN">{post.data.title}</h2>
 				<p>{post.data.description}</p>
 				{(post.data.tags ?? []).length > 0 && (
 					<div class="tags">
