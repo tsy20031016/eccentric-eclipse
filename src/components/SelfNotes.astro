@@ -4,17 +4,17 @@ import closingNotes from '../data/closing-notes.json';
 interface Props { closing?: boolean }
 const { closing = false } = Astro.props;
 const storedNotes = closing ? closingNotes : selfNotes;
-const label = closing ? '页尾文字' : '写给自己';
+const label = closing ? 'Closing words' : 'To myself';
 
 // Keep author numbering in storage, but omit list markers from public text.
 const notes = storedNotes.map(note => note.replace(/^\s*(?:\d+[.．](?!\d)|\d+[、)）]|\(\d+\)|（\d+）)\s*/u, ''));
 ---
 
 <section class:list={["self-notes", { closing }]} aria-label={label} data-notes={JSON.stringify(notes)}>
-  {!closing && <div class="heading"><span>TO MYSELF</span><span>{label}</span></div>}
-  <p class="note">{notes[0] || (closing ? '留一点空间，给值得留下的话。' : '留一点空间，给想对自己说的话。')}</p>
+  {!closing && <div class="heading"><span>TO MYSELF</span></div>}
+  <p class="note">{notes[0] || (closing ? 'A little space for words worth keeping.' : 'A little space for words to myself.')}</p>
   <div class="controls" hidden={notes.length < 2}>
-    <button type="button" aria-label="暂停轮播">暂停</button>
+    <button type="button" aria-label="Pause rotation">Pause</button>
   </div>
 </section>
 
@@ -30,8 +30,8 @@ const notes = storedNotes.map(note => note.replace(/^\s*(?:\d+[.．](?!\d)|\d+[�
     let switching = false;
     button.addEventListener('click', () => {
       paused = !paused;
-      button.textContent = paused ? '继续' : '暂停';
-      button.setAttribute('aria-label', paused ? '继续轮播' : '暂停轮播');
+      button.textContent = paused ? 'Resume' : 'Pause';
+      button.setAttribute('aria-label', paused ? 'Resume rotation' : 'Pause rotation');
     });
     window.setInterval(async () => {
       if (paused || document.hidden || switching) return;

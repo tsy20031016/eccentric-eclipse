@@ -10,10 +10,21 @@ const allPosts = (await getCollection("posts"))
 	.filter((post) => post.data.category !== "日记")
 .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 
-const posts = allPosts.slice(0, 4);
 
-const mathPosts = allPosts.filter((post) => post.data.category === "数学").slice(0, 2);
-const aiPosts = allPosts.filter((post) => post.data.category === "AI").slice(0, 2);
+const englishPreviews: Record<string, { title: string; description: string }> = {
+  'judging-sequence-limits': { title: 'Sequence Limits: Recognize the Pattern, Choose the Method', description: 'From the Cauchy criterion and monotone sequences to limsup, liminf, and Stolz: choosing a method by understanding the sequence.' },
+  'real-completeness-and-topology': { title: 'From Nested Intervals to Topology: Understanding the Real Numbers', description: 'Exploring completeness, finite covers, accumulation points, and connectedness through the continuity of the real line.' },
+  'properties-of-limits': { title: 'Properties of Limits: From Calculation to a Way of Thinking', description: 'Understanding uniqueness and arithmetic rules by turning complicated errors into quantities we can control.' },
+  'understanding-limits': { title: 'Understanding Limits: From Intuition to Precision', description: 'From the idea of getting closer to epsilon–delta definitions and the sequential criterion for limits.' },
+  '关于我对ai的一些杂谈2026-9-1788194845921': { title: 'Some Thoughts on AI — September 2026', description: 'Reflections on AI as a tool for building, thinking, and exploring ideas.' },
+};
+const categories: Record<string, string> = { '数学': 'Mathematics', '日记': 'Diary', '技术': 'Technology', '思考': 'Thoughts', '生活': 'Life' };
+const localize = (post: (typeof allPosts)[number]) => ({ ...post, data: { ...post.data, ...englishPreviews[post.id], category: categories[post.data.category] ?? post.data.category } });
+
+const posts = allPosts.slice(0, 4).map(localize);
+
+const mathPosts = allPosts.filter((post) => post.data.category === "数学").slice(0, 2).map(localize);
+const aiPosts = allPosts.filter((post) => post.data.category === "AI").slice(0, 2).map(localize);
 
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
@@ -25,13 +36,13 @@ const aboutUrl = `${base}about/`;
 const writeUrl = `${base}write/`;
 ---
 
-<html lang="zh-CN">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<meta
 			name="description"
-			content="TSY 的个人空间，记录数学、AI、技术与生活。"
+			content="A personal space for mathematics, AI, technology, and life."
 		/>
 		<meta name="theme-color" content="#fbfaf6" />
 
@@ -39,7 +50,7 @@ const writeUrl = `${base}write/`;
 	</head>
 
 	<body class="blog-home">
-		<Header />
+		<Header english />
 
 		<main>
 			<!-- ========================================
@@ -47,37 +58,37 @@ const writeUrl = `${base}write/`;
 			========================================= -->
 
 			<section class="hero">
-				<div class="hero-manuscript"><MathManuscript /></div>
+				<div class="hero-manuscript"><MathManuscript navierStokes /></div>
 				<div class="hero-inner">
 					<p class="eyebrow">
 						MATHEMATICS · THOUGHTS · LIFE
 					</p>
 
 					<h1>
-						记录思考，
+						Notes on thought,
 						<br />
-						也记录生活。
+						and on life.
 					</h1>
 
 					<p class="hero-description">
-						这里是 TSY 的个人空间。
+						Welcome to TSY’s personal space.
 						<br />
-						记录数学学习、技术折腾，<br />
-						以及那些值得留下来的想法。
+						Exploring mathematics and technology,<br />
+						and keeping the thoughts that matter.
 					</p>
 
 					<div class="hero-actions">
 						<a class="primary-button" href={postsUrl}>
-							开始阅读
+							Start reading
 							<span>→</span>
 						</a>
 
 						<a class="text-button" href={aboutUrl}>
-							了解我
+							About me
 						</a>
 					</div>
 					<a class="primary-button writing-link" href={writeUrl}>
-						留下今天的痕迹 <span aria-hidden="true">↗</span>
+						Leave a trace of today <span aria-hidden="true">↗</span>
 					</a>
 				</div>
 			</section>
@@ -102,9 +113,9 @@ const writeUrl = `${base}write/`;
 			<section class="category-notes-section">
 				<div class="section-label"><span>02</span><span>RECENT NOTES</span></div>
 				<div class="category-note-grid">
-					<section class="category-note"><h2>数学</h2><ArticleList posts={mathPosts} showCategory={false} /></section>
-					<section class="category-note"><h2>AI</h2><ArticleList posts={aiPosts} showCategory={false} /></section>
-					<section class="category-note"><h2>日记</h2><p>日常记录已上锁。</p><a href={`${base}diary/`}>输入密码查看 →</a></section>
+					<section class="category-note"><h2>Mathematics</h2><ArticleList posts={mathPosts} showCategory={false} english /></section>
+					<section class="category-note"><h2>AI</h2><ArticleList posts={aiPosts} showCategory={false} english /></section>
+					<section class="category-note"><h2>Diary</h2><p>Personal entries are password protected.</p><a href={`${base}diary/`}>Unlock diary →</a></section>
 				</div>
 			</section>
 
@@ -122,24 +133,24 @@ const writeUrl = `${base}write/`;
 				<div class="about-grid">
 					<div>
 						<h2>
-							一个正在学习<br />
-							如何理解世界的人。
+							Learning, little by little,<br />
+							to understand the world.
 						</h2>
 					</div>
 
 					<div class="about-text">
 						<p>
-							我正在学习数学，也在尝试理解一些
-							看起来很难的问题。
+							I study mathematics and work toward understanding
+                            questions that seem difficult at first.
 						</p>
 
 						<p>
-							有时候是数学，有时候是技术，
-							有时候只是生活里突然冒出来的一个念头。
+							Sometimes it is mathematics, sometimes technology,
+                            and sometimes a thought that arrives in the middle of everyday life.
 						</p>
 
 						<a class="arrow-link" href={aboutUrl}>
-							关于我
+							About me
 							<span>↗</span>
 						</a>
 					</div>
@@ -159,11 +170,11 @@ const writeUrl = `${base}write/`;
 							<span>LATEST POSTS</span>
 						</div>
 
-						<h2>最近写了些什么</h2>
+						<h2>Recent writing</h2>
 					</div>
 
 					<a class="view-all" href={postsUrl}>
-						查看全部
+						View all
 						<span>→</span>
 					</a>
 				</div>
@@ -178,7 +189,7 @@ const writeUrl = `${base}write/`;
 								<div class="post-meta">
 									<time datetime={post.data.date.toISOString()}>
 										{post.data.date.toLocaleDateString(
-											"zh-CN",
+											"en-US",
 											{
 												year: "numeric",
 												month: "2-digit",
@@ -220,13 +231,13 @@ const writeUrl = `${base}write/`;
 
 				<div class="projects-heading">
 					<h2>
-						正在做的，
+						Work in progress,
 						<br />
-						以及曾经折腾过的。
+						and past explorations.
 					</h2>
 
 					<a class="arrow-link" href={projectsUrl}>
-						查看项目
+						View projects
 						<span>↗</span>
 					</a>
 				</div>
@@ -239,8 +250,8 @@ const writeUrl = `${base}write/`;
 							<h3>Eccentric Eclipse</h3>
 
 							<p>
-								我的个人博客。
-								记录数学、技术与生活。
+								My personal blog.
+                                Notes on mathematics, technology, and life.
 							</p>
 
 							<div class="project-tags">
@@ -260,8 +271,8 @@ const writeUrl = `${base}write/`;
 							<h3>AI & Experiments</h3>
 
 							<p>
-								一些关于 AI、记忆系统以及
-								个人工具的实验。
+								Experiments with AI, memory systems,
+                                and tools for everyday use.
 							</p>
 
 							<div class="project-tags">
@@ -295,10 +306,10 @@ const writeUrl = `${base}write/`;
 				</div>
 
 				<div class="footer-right">
-					<a href={homeUrl}>首页</a>
-					<a href={postsUrl}>文章</a>
-					<a href={projectsUrl}>项目</a>
-					<a href={aboutUrl}>关于</a>
+					<a href={homeUrl}>Home</a>
+					<a href={postsUrl}>Writing</a>
+					<a href={projectsUrl}>Projects</a>
+					<a href={aboutUrl}>About</a>
 				</div>
 			</div>
 
@@ -335,6 +346,8 @@ const writeUrl = `${base}write/`;
 			sans-serif;
 	}
 
+    :global(body.blog-home) { container-type: inline-size; }
+
 	:global(a) {
 		-webkit-tap-highlight-color: transparent;
 	}
@@ -351,14 +364,16 @@ const writeUrl = `${base}write/`;
 	================================ */
 
 	:global(body.blog-home .header-inner) { max-width: 1376px; padding: 18px 32px; }
+    :global(body.blog-home nav) { gap: clamp(12px, 2vw, 28px); }
+    :global(body.blog-home nav a) { font-size: clamp(11px, 1vw, 14px); }
     :global(body.blog-home .logo) { font-family: Georgia, serif; font-weight: 400; font-size: 27px; }
 
 	.hero {
 		position: relative;
 		min-height: 700px;
 		height: clamp(700px, 54vw, 840px);
-        margin-inline: calc(50% - 50vw);
-        padding: 0 max(32px, calc((100vw - 1312px) / 2));
+        margin-inline: calc(50% - 50cqw);
+        padding: 0 max(32px, calc((100cqw - 1312px) / 2));
 
 		display: flex;
 		align-items: center;
@@ -381,7 +396,7 @@ const writeUrl = `${base}write/`;
 	.hero-inner {
 		position: relative;
 		z-index: 1;
-		max-width: 560px;
+		max-width: 600px;
 		padding: 0;
 	}
 
@@ -403,7 +418,7 @@ const writeUrl = `${base}write/`;
 			"Times New Roman",
 			serif;
 
-		font-size: clamp(54px, 5.2vw, 80px);
+		font-size: clamp(52px, 5.2vw, 80px);
         font-family: Georgia, "Songti SC", SimSun, serif;
         font-weight: 400;
 		color: #292822;
@@ -415,7 +430,7 @@ const writeUrl = `${base}write/`;
 		margin: 30px 0 0;
 
 		max-width: 410px;
-        font-family: "Songti SC", SimSun, serif;
+        font-family: Georgia, "Times New Roman", serif;
 
 		color: #707070;
 		font-size: 21px;
@@ -1019,7 +1034,7 @@ const writeUrl = `${base}write/`;
 		}
 
 		.hero h1 {
-			font-size: clamp(42px, 12vw, 60px);
+			font-size: clamp(38px, 10.5vw, 60px);
 		}
 
 		.hero-description {
