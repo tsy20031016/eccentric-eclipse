@@ -1,29 +1,168 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ProjectArchive from "../../components/ProjectArchive.astro";
+
+const repository = "https://github.com/tsy20031016/eccentric-eclipse";
+const milestones = [
+	{
+		date: "2026-11-17",
+		title: "数学分析专题继续更新",
+		detail: "在 11 月 14 日发布函数极限文章，17 日补充连续性与存在性，延续从数列极限到函数性质的整理。",
+		commits: [["53f5dc3", "发布函数极限"], ["5d543ed", "补充连续性与存在性"]],
+	},
+	{
+		date: "2026-11-13",
+		title: "首页背景与文章检索",
+		detail: "恢复中文首页与文章预览，采用全幅 Navier–Stokes 手稿背景，并将文章搜索和筛选移到列表标题旁。",
+		commits: [["7bf0fb5", "更新首页背景"], ["7011694", "调整文章搜索布局"]],
+	},
+	{
+		date: "2026-10-31",
+		title: "手稿风格与首页短句",
+		detail: "更新博客的手稿视觉，加入轮播的「写给自己」和可从写作页编辑的结语。",
+		commits: [["8ec879b", "加入首页短句轮播"], ["855bde3", "更新手稿风格与结语"]],
+	},
+	{
+		date: "2026-10-29",
+		title: "数学文章分级",
+		detail: "按数学分析、极限、导数与积分等主题组织文章，并在编辑器中加入对应的分类选项。",
+		commits: [["7633c28", "整理数学专题"], ["871f536", "加入分类选项"]],
+	},
+	{
+		date: "2026-10-20",
+		title: "日记加密",
+		detail: "给日记阅读页与编辑器内的日记内容加入密码保护。",
+		commits: [["5e2ac8f", "加入日记密码保护"]],
+	},
+	{
+		date: "2026-09-27",
+		title: "公式渲染与项目文档",
+		detail: "修正编辑器与文章中的数学公式渲染，并加入 Aegis Agent 项目文档工作区。",
+		commits: [["9f8122e", "修正数学公式渲染"], ["c26027e", "加入项目文档工作区"]],
+	},
+	{
+		date: "2026-08-29",
+		title: "移动写作与图片上传",
+		detail: "增加移动端写作页和图片上传，随后调整移动端上传以及编辑器界面。",
+		commits: [["0c5bb41", "加入移动写作页"], ["2829828", "加入图片上传"], ["0926ed4", "改进移动端上传"]],
+	},
+	{
+		date: "2026-08-27",
+		title: "博客上线",
+		detail: "搭建 Astro 博客，配置 GitHub Pages 与自动部署。",
+		commits: [["0d1dad2", "搭建博客"], ["d76c28a", "配置自动部署"]],
+	},
+];
 ---
 
 <BaseLayout title="Personal Blog · TSY">
 	<ProjectArchive
-		eyebrow="PROJECT 02"
+		eyebrow="PROJECT 03"
 		title="Personal Blog"
 		description="这是一个属于我的个人博客，用来记录数学、AI、技术和生活。"
 	>
-		<section class="archive-section">
-			<h2>About</h2>
-			<p>这个项目是一个持续生长的个人记录空间。</p>
+		<section class="archive-section" id="personal-blog-overview">
+			<h2>项目概览</h2>
+			<div class="section-content">
+				<p>博客用来记录数学学习、AI 项目、技术文章和生活。文章保存在 Git 仓库中，网页端提供阅读、搜索和写作入口。</p>
+				<p><a href={repository}>GitHub 源码</a> · <a href={`${repository}/commits/main/`}>完整提交记录</a></p>
+			</div>
 		</section>
 		<section class="archive-section">
-			<h2>Architecture</h2>
-			<ul><li>Astro</li><li>Markdown</li><li>KaTeX</li><li>GitHub Pages</li><li>Cloudflare</li></ul>
+			<h2>代码结构</h2>
+			<dl class="section-content">
+				<div>
+					<dt>页面与组件</dt>
+					<dd><code>src/pages/</code> 定义首页、文章、专题、项目和写作路由。<code>src/layouts/</code> 与 <code>src/components/</code> 复用页面布局、导航、文章列表和项目归档。</dd>
+				</div>
+				<div>
+					<dt>内容与公式</dt>
+					<dd><code>src/content.config.ts</code> 声明文章和项目内容集合。Markdown 源稿位于 <code>src/content/</code>，Astro 在构建时读取分类、日期和标签，并通过 KaTeX 渲染数学公式。</dd>
+				</div>
+				<div>
+					<dt>写作与附件</dt>
+					<dd><code>src/pages/write.astro</code> 提供文章编辑入口。<code>worker/index.js</code> 中的 Cloudflare Worker 把文章、图片和首页短句的修改写入 GitHub 仓库，站点图片保存在 <code>public/images/</code>。</dd>
+				</div>
+				<div>
+					<dt>日记阅读</dt>
+					<dd><code>src/pages/diary.astro</code> 提供日记入口，普通文章列表会排除日记。页面端的密码保护和加密逻辑位于 <code>DiaryLock.astro</code> 与 <code>diary-crypto.ts</code>。</dd>
+				</div>
+			</dl>
 		</section>
 		<section class="archive-section">
-			<h2>Development</h2>
-			<ol>
-				<li>Project Start</li><li>UI</li><li>Writing System</li><li>LaTeX / KaTeX</li><li>Image Upload</li><li>Deployment</li>
-			</ol>
+			<h2>开发与发布</h2>
+			<div class="section-content">
+				<p>本地用 <code>npm run dev -- --background</code> 后台预览，用 <code>npm run build</code> 生成静态站点。</p>
+				<p><code>main</code> 收到推送后，GitHub Actions 安装依赖、构建 <code>dist/</code> 并发布到 GitHub Pages。站点通过 <code>astro.config.mjs</code> 配置 <code>/eccentric-eclipse</code> 路径前缀。</p>
+			</div>
 		</section>
-		<section class="archive-section"><h2>Development Log</h2><p>预留给博客开发过程的记录。</p></section>
-		<section class="archive-section"><h2>Ideas</h2><p>预留给未来功能想法的整理。</p></section>
+		<section class="archive-section">
+			<h2>开发日志</h2>
+			<div class="section-content">
+				{milestones.map(({ date, title, detail, commits }) => (
+					<div class="milestone">
+						<time datetime={date}>{date}</time>
+						<h3>{title}</h3>
+						<p>{detail}</p>
+						<div class="commits">
+							{commits.map(([commit, label]) => (
+								<a class="commit-link" href={`${repository}/commit/${commit}`}>
+									{label}<span aria-hidden="true">↗</span>
+								</a>
+							))}
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
 	</ProjectArchive>
 </BaseLayout>
+
+<style>
+	:global(body:has(#personal-blog-overview) > :is(header, main, footer) *) {
+		color: #000;
+	}
+
+	.section-content a:any-link {
+		color: #000;
+	}
+
+	.section-content {
+		display: grid;
+		gap: 18px;
+		min-width: 0;
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+
+	dt, h3 { font-weight: 600; }
+	dd { margin: 4px 0 0; font-size: 15px; line-height: 1.85; }
+	.milestone + .milestone { border-top: 1px solid #e5e5df; padding-top: 18px; }
+	.milestone time { font-size: 13px; }
+	.milestone h3 { margin: 4px 0; font-size: 16px; }
+	.commits { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+	.commit-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 10px;
+		border: 1px solid #dddcd2;
+		border-radius: 5px;
+		background: #fbfaf6;
+		font-size: 13px;
+		line-height: 1.4;
+		text-decoration: none;
+	}
+
+	.commit-link:hover,
+	.commit-link:focus-visible {
+		border-color: #aaa99d;
+		background: #efefe7;
+	}
+
+	.commit-link:focus-visible {
+		outline: 2px solid #000;
+		outline-offset: 2px;
+	}
+</style>
